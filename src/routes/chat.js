@@ -5,9 +5,46 @@ const safetyGuard = require("../engines/safetyGuard");
 const reasoningEngine = require("../engines/reasoningEngine");
 const { getUserMemory, updateUserMemory } = require("../engines/memoryEngine");
 
-const normalize = require("../engines/messageNormalizer");
-const detectLanguage = require("../engines/languageDetector");
-const classifyContext = require("../engines/contextClassifier");
+const messageNormalizer = require("../engines/messageNormalizer");
+const languageDetector = require("../engines/languageDetector");
+const contextClassifier = require("../engines/contextClassifier");
+
+function getNormalizeFn() {
+  if (typeof messageNormalizer === "function") return messageNormalizer;
+  if (messageNormalizer && typeof messageNormalizer.normalize === "function")
+    return messageNormalizer.normalize;
+  if (messageNormalizer && typeof messageNormalizer.normalizeMessage === "function")
+    return messageNormalizer.normalizeMessage;
+  return function (text) {
+    return typeof text === "string" ? text : "";
+  };
+}
+
+function getLanguageDetectorFn() {
+  if (typeof languageDetector === "function") return languageDetector;
+  if (languageDetector && typeof languageDetector.detect === "function")
+    return languageDetector.detect;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  return function () {
+    return "mixed";
+  };
+}
+
+function getContextClassifierFn() {
+  if (typeof contextClassifier === "function") return contextClassifier;
+  if (contextClassifier && typeof contextClassifier.classify === "function")
+    return contextClassifier.classify;
+  if (contextClassifier && typeof contextClassifier.classifyContext === "function")
+    return contextClassifier.classifyContext;
+  return function () {
+    return { category: "general" };
+  };
+}
+
+const normalize = getNormalizeFn();
+const detectLang = getLanguageDetectorFn();
+const classifyCtx = getContextClassifierFn();
 
 router.post("/chat", async (req, res) => {
   try {
@@ -16,11 +53,11 @@ router.post("/chat", async (req, res) => {
     const rawMessage = body.message || "";
 
     const normalizedMessage = normalize(rawMessage);
-    const languageInfo = detectLanguage(normalizedMessage);
-    const contextInfo = classifyContext(normalizedMessage, languageInfo);
+    const languageInfo = detectLang(normalizedMessage);
+    const contextInfo = classifyCtx(normalizedMessage, languageInfo);
     const safetyInfo = safetyGuard(normalizedMessage, contextInfo);
 
-    const currentMemory = getUserMemory(userId);
+    const previousMemory = getUserMemory(userId);
 
     const halo = reasoningEngine({
       context: contextInfo.category,
@@ -55,7 +92,7 @@ router.post("/chat", async (req, res) => {
 
       memory_snapshot: memoryResult.memory,
       memory_delta: memoryResult.delta,
-      previous_memory: currentMemory
+      previous_memory: previousMemory
     });
   } catch (err) {
     console.error("HALO /chat error:", err);
