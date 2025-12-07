@@ -1,5 +1,6 @@
 const express = require('express');
 const { normalizeMessage } = require('../engines/messageNormalizer');
+const { classifyMessage } = require('../engines/contextClassifier');
 
 const router = express.Router();
 
@@ -13,9 +14,11 @@ router.post('/chat', async (req, res) => {
   }
 
   const normalized = normalizeMessage(message);
+  const classification = classifyMessage(normalized);
 
   return res.json({
     reply: `HALO received: ${normalized}`,
+    classification,
     timestamp: new Date().toISOString()
   });
 });
