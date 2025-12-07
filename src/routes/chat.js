@@ -33,12 +33,14 @@ function getLanguageDetectorFn() {
 
 function getContextClassifierFn() {
   if (typeof contextClassifier === "function") return contextClassifier;
+  if (contextClassifier && typeof contextClassifier.classifyMessage === "function")
+    return contextClassifier.classifyMessage;
   if (contextClassifier && typeof contextClassifier.classify === "function")
     return contextClassifier.classify;
   if (contextClassifier && typeof contextClassifier.classifyContext === "function")
     return contextClassifier.classifyContext;
   return function () {
-    return { category: "general" };
+    return { category: "low_stress", isHighStress: false, messageLength: 0 };
   };
 }
 
@@ -63,6 +65,22 @@ function resolveLanguageCode(languageInfo) {
   return "en";
 }
 
+function mapContextForHalo(category) {
+  if (!category) return "general";
+
+  const c = String(category).toLowerCase();
+
+  if (c === "emotional_discomfort") return "emotional_discomfort";
+  if (c === "decision_making") return "decision";
+  if (c === "planning") return "planning";
+  if (c === "high_stress") return "emotional_discomfort";
+  if (c === "casual_conversation") return "general";
+  if (c === "low_stress") return "general";
+  if (c === "unclear") return "general";
+
+  return "general";
+}
+
 router.post("/chat", async (req, res) => {
   try {
     const body = req.body || {};
@@ -71,14 +89,15 @@ router.post("/chat", async (req, res) => {
 
     const normalizedMessage = normalize(rawMessage);
     const languageInfo = detectLang(normalizedMessage);
-    const contextInfo = classifyCtx(normalizedMessage, languageInfo);
-    const safetyInfo = safetyGuard(normalizedMessage, contextInfo);
+    const rawContextInfo = classifyCtx(normalizedMessage);
+    const safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
 
     const langCode = resolveLanguageCode(languageInfo);
+    const haloContext = mapContextForHalo(rawContextInfo.category);
     const previousMemory = getUserMemory(userId);
 
     const halo = reasoningEngine({
-      context: contextInfo.category,
+      context: haloContext,
       normalizedMessage,
       language: langCode
     });
@@ -86,7 +105,7 @@ router.post("/chat", async (req, res) => {
     const memoryResult = updateUserMemory({
       userId,
       normalizedMessage,
-      context: contextInfo.category,
+      context: haloContext,
       language: langCode,
       safetyFlag: safetyInfo.flag
     });
@@ -104,7 +123,8 @@ router.post("/chat", async (req, res) => {
 
       meta: {
         language: languageInfo,
-        context: contextInfo,
+        context_raw: rawContextInfo,
+        context_halo: haloContext,
         safety: safetyInfo
       },
 
