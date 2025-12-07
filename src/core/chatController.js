@@ -1,14 +1,10 @@
-const express = require("express");
-const router = express.Router();
-
 const safetyGuard = require("../engines/safetyGuard");
 const reasoningEngine = require("../engines/reasoningEngine");
-
 const normalize = require("../utils/messageNormalizer");
 const detectLanguage = require("../utils/languageDetector");
 const classifyContext = require("../utils/contextClassifier");
 
-router.post("/chat", async (req, res) => {
+async function handleChat(req, res) {
   try {
     const body = req.body || {};
     const userId = body.user_id || "anonymous";
@@ -19,7 +15,7 @@ router.post("/chat", async (req, res) => {
     const contextInfo = classifyContext(normalizedMessage, languageInfo);
     const safetyInfo = safetyGuard(normalizedMessage, contextInfo);
 
-    const halo = reasoningEngine({
+    const haloOutput = reasoningEngine({
       context: contextInfo.category,
       normalizedMessage,
       language: languageInfo === "ar" ? "ar" : "en"
@@ -28,27 +24,24 @@ router.post("/chat", async (req, res) => {
     return res.status(200).json({
       ok: true,
       user_id: userId,
-
-      reflection: halo.reflection,
-      question: halo.question,
-      micro_step: halo.micro_step,
-
+      reflection: haloOutput.reflection,
+      question: haloOutput.question,
+      micro_step: haloOutput.micro_step,
       safety_flag: safetyInfo.flag,
-      memory_update: halo.memory_update,
-
+      memory_update: haloOutput.memory_update,
       meta: {
-        language: languageInfo,
         context: contextInfo,
+        language: languageInfo,
         safety: safetyInfo
       }
     });
   } catch (err) {
-    console.error("HALO /chat error:", err);
+    console.error("HALO Chat Error:", err);
     return res.status(500).json({
       ok: false,
-      error: "internal_error"
+      error: "internal_server_error"
     });
   }
-});
+}
 
-module.exports = router;
+module.exports = { handleChat };
