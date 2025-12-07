@@ -26,7 +26,7 @@ function getLanguageDetectorFn() {
     return languageDetector.detect;
   if (languageDetector && typeof languageDetector.detectLanguage === "function")
     return languageDetector.detectLanguage;
-  return function (text) {
+  return function () {
     return { language: "mixed", confidence: 0 };
   };
 }
@@ -96,10 +96,13 @@ router.post("/chat", async (req, res) => {
     const haloContext = mapContextForHalo(rawContextInfo.category);
     const previousMemory = getUserMemory(userId);
 
-    const halo = reasoningEngine({
+    const halo = await reasoningEngine.generateResponse({
+      message: normalizedMessage,
+      language: langCode,
       context: haloContext,
-      normalizedMessage,
-      language: langCode
+      safety: safetyInfo,
+      memory: previousMemory || {},
+      lastReasoning: previousMemory && previousMemory.lastReasoning ? previousMemory.lastReasoning : null
     });
 
     const memoryResult = updateUserMemory({
@@ -107,27 +110,24 @@ router.post("/chat", async (req, res) => {
       normalizedMessage,
       context: haloContext,
       language: langCode,
-      safetyFlag: safetyInfo.flag
+      safetyFlag: safetyInfo.flag,
+      reasoning: halo
     });
 
     return res.status(200).json({
       ok: true,
       user_id: userId,
-
       reflection: halo.reflection,
       question: halo.question,
       micro_step: halo.micro_step,
-
       safety_flag: safetyInfo.flag,
       memory_update: halo.memory_update,
-
       meta: {
         language: languageInfo,
         context_raw: rawContextInfo,
         context_halo: haloContext,
         safety: safetyInfo
       },
-
       memory_snapshot: memoryResult.memory,
       memory_delta: memoryResult.delta,
       previous_memory: previousMemory
