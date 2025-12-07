@@ -3,10 +3,11 @@ const router = express.Router();
 
 const safetyGuard = require("../engines/safetyGuard");
 const reasoningEngine = require("../engines/reasoningEngine");
+const { getUserMemory, updateUserMemory } = require("../engines/memoryEngine");
 
-const normalize = require("../utils/messageNormalizer");
-const detectLanguage = require("../utils/languageDetector");
-const classifyContext = require("../utils/contextClassifier");
+const normalize = require("../engines/messageNormalizer");
+const detectLanguage = require("../engines/languageDetector");
+const classifyContext = require("../engines/contextClassifier");
 
 router.post("/chat", async (req, res) => {
   try {
@@ -19,10 +20,20 @@ router.post("/chat", async (req, res) => {
     const contextInfo = classifyContext(normalizedMessage, languageInfo);
     const safetyInfo = safetyGuard(normalizedMessage, contextInfo);
 
+    const currentMemory = getUserMemory(userId);
+
     const halo = reasoningEngine({
       context: contextInfo.category,
       normalizedMessage,
       language: languageInfo === "ar" ? "ar" : "en"
+    });
+
+    const memoryResult = updateUserMemory({
+      userId,
+      normalizedMessage,
+      context: contextInfo.category,
+      language: languageInfo === "ar" ? "ar" : "en",
+      safetyFlag: safetyInfo.flag
     });
 
     return res.status(200).json({
@@ -40,7 +51,11 @@ router.post("/chat", async (req, res) => {
         language: languageInfo,
         context: contextInfo,
         safety: safetyInfo
-      }
+      },
+
+      memory_snapshot: memoryResult.memory,
+      memory_delta: memoryResult.delta,
+      previous_memory: currentMemory
     });
   } catch (err) {
     console.error("HALO /chat error:", err);
