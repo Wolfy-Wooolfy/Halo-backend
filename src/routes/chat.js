@@ -26,8 +26,8 @@ function getLanguageDetectorFn() {
     return languageDetector.detect;
   if (languageDetector && typeof languageDetector.detectLanguage === "function")
     return languageDetector.detectLanguage;
-  return function () {
-    return "mixed";
+  return function (text) {
+    return { language: "mixed", confidence: 0 };
   };
 }
 
@@ -46,6 +46,23 @@ const normalize = getNormalizeFn();
 const detectLang = getLanguageDetectorFn();
 const classifyCtx = getContextClassifierFn();
 
+function resolveLanguageCode(languageInfo) {
+  if (!languageInfo) return "en";
+
+  if (typeof languageInfo === "string") {
+    if (languageInfo.toLowerCase() === "arabic" || languageInfo.toLowerCase() === "ar") {
+      return "ar";
+    }
+    return "en";
+  }
+
+  const label = String(languageInfo.language || "").toLowerCase();
+
+  if (label === "arabic" || label === "ar") return "ar";
+
+  return "en";
+}
+
 router.post("/chat", async (req, res) => {
   try {
     const body = req.body || {};
@@ -57,19 +74,20 @@ router.post("/chat", async (req, res) => {
     const contextInfo = classifyCtx(normalizedMessage, languageInfo);
     const safetyInfo = safetyGuard(normalizedMessage, contextInfo);
 
+    const langCode = resolveLanguageCode(languageInfo);
     const previousMemory = getUserMemory(userId);
 
     const halo = reasoningEngine({
       context: contextInfo.category,
       normalizedMessage,
-      language: languageInfo === "ar" ? "ar" : "en"
+      language: langCode
     });
 
     const memoryResult = updateUserMemory({
       userId,
       normalizedMessage,
       context: contextInfo.category,
-      language: languageInfo === "ar" ? "ar" : "en",
+      language: langCode,
       safetyFlag: safetyInfo.flag
     });
 
