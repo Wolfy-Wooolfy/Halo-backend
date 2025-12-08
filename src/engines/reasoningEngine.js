@@ -124,7 +124,8 @@ async function generateResponse(options) {
         last_topic: context,
         mood_delta: "",
         hesitation_signal: false
-      }
+      },
+      source: "fallback"
     };
   }
 
@@ -155,26 +156,29 @@ async function generateResponse(options) {
           last_topic: context,
           mood_delta: "",
           hesitation_signal: false
-        }
+        },
+        source: "fallback"
       };
     }
 
-    const raw = llmResult.raw || {};
     let text = "";
 
-    if (raw && Array.isArray(raw.choices) && raw.choices[0]) {
-      const choice = raw.choices[0];
-      if (typeof choice.text === "string") {
-        text = choice.text;
-      } else if (choice.message && typeof choice.message.content === "string") {
-        text = choice.message.content;
+    if (typeof llmResult.output === "string" && llmResult.output.trim().length > 0) {
+      text = llmResult.output;
+    } else {
+      const raw = llmResult.raw || {};
+      if (raw && Array.isArray(raw.choices) && raw.choices[0]) {
+        const choice = raw.choices[0];
+        if (choice.message && typeof choice.message.content === "string") {
+          text = choice.message.content;
+        } else if (typeof choice.text === "string") {
+          text = choice.text;
+        }
+      } else if (typeof raw.result === "string") {
+        text = raw.result;
+      } else if (typeof raw.content === "string") {
+        text = raw.content;
       }
-    } else if (typeof raw.output === "string") {
-      text = raw.output;
-    } else if (typeof raw.result === "string") {
-      text = raw.result;
-    } else if (typeof raw.content === "string") {
-      text = raw.content;
     }
 
     const parsed = extractHaloLinesFromLLMText(text);
@@ -189,7 +193,8 @@ async function generateResponse(options) {
           last_topic: context,
           mood_delta: "",
           hesitation_signal: false
-        }
+        },
+        source: "fallback"
       };
     }
 
@@ -202,7 +207,8 @@ async function generateResponse(options) {
         last_topic: context,
         mood_delta: "",
         hesitation_signal: false
-      }
+      },
+      source: "llm"
     };
   } catch (err) {
     return {
@@ -214,7 +220,8 @@ async function generateResponse(options) {
         last_topic: context,
         mood_delta: "",
         hesitation_signal: false
-      }
+      },
+      source: "fallback"
     };
   }
 }
