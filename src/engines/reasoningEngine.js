@@ -99,6 +99,13 @@ function buildFallbackResponse(options) {
   };
 }
 
+function buildEngineMeta(source, modelId) {
+  return {
+    source: source || "fallback",
+    model: modelId || (source === "llm" ? (process.env.LLM_MODEL || "gpt-4o") : "rule-based")
+  };
+}
+
 async function generateResponse(options) {
   const safeOptions = options && typeof options === "object" ? options : {};
   const message = safeOptions.message || safeOptions.text || "";
@@ -108,12 +115,15 @@ async function generateResponse(options) {
   const memory = safeOptions.memory || {};
   const lastReasoning = safeOptions.lastReasoning || null;
 
+  const modelId = process.env.LLM_MODEL || "gpt-4o";
+
   const fallback = buildFallbackResponse({
     message,
     language,
     context
   });
 
+  // لو مفيش إعدادات LLM → نرجع fallback ومعاه engine=fallback
   if (!isConfigured()) {
     return {
       reflection: fallback.reflection,
@@ -125,7 +135,7 @@ async function generateResponse(options) {
         mood_delta: "",
         hesitation_signal: false
       },
-      source: "fallback"
+      engine: buildEngineMeta("fallback", "rule-based")
     };
   }
 
@@ -141,7 +151,7 @@ async function generateResponse(options) {
 
     const llmResult = await callLLM({
       prompt,
-      model: process.env.LLM_MODEL || "default",
+      model: modelId,
       temperature: 0.4,
       max_tokens: 256
     });
@@ -157,28 +167,26 @@ async function generateResponse(options) {
           mood_delta: "",
           hesitation_signal: false
         },
-        source: "fallback"
+        engine: buildEngineMeta("fallback", "rule-based")
       };
     }
 
+    const raw = llmResult.raw || {};
     let text = "";
 
-    if (typeof llmResult.output === "string" && llmResult.output.trim().length > 0) {
-      text = llmResult.output;
-    } else {
-      const raw = llmResult.raw || {};
-      if (raw && Array.isArray(raw.choices) && raw.choices[0]) {
-        const choice = raw.choices[0];
-        if (choice.message && typeof choice.message.content === "string") {
-          text = choice.message.content;
-        } else if (typeof choice.text === "string") {
-          text = choice.text;
-        }
-      } else if (typeof raw.result === "string") {
-        text = raw.result;
-      } else if (typeof raw.content === "string") {
-        text = raw.content;
+    if (raw && Array.isArray(raw.choices) && raw.choices[0]) {
+      const choice = raw.choices[0];
+      if (typeof choice.text === "string") {
+        text = choice.text;
+      } else if (choice.message && typeof choice.message.content === "string") {
+        text = choice.message.content;
       }
+    } else if (typeof raw.output === "string") {
+      text = raw.output;
+    } else if (typeof raw.result === "string") {
+      text = raw.result;
+    } else if (typeof raw.content === "string") {
+      text = raw.content;
     }
 
     const parsed = extractHaloLinesFromLLMText(text);
@@ -194,7 +202,7 @@ async function generateResponse(options) {
           mood_delta: "",
           hesitation_signal: false
         },
-        source: "fallback"
+        engine: buildEngineMeta("fallback", "rule-based")
       };
     }
 
@@ -208,7 +216,7 @@ async function generateResponse(options) {
         mood_delta: "",
         hesitation_signal: false
       },
-      source: "llm"
+      engine: buildEngineMeta("llm", modelId)
     };
   } catch (err) {
     return {
@@ -221,7 +229,7 @@ async function generateResponse(options) {
         mood_delta: "",
         hesitation_signal: false
       },
-      source: "fallback"
+      engine: buildEngineMeta("fallback", "rule-based")
     };
   }
 }
