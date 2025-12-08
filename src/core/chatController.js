@@ -15,10 +15,19 @@ async function handleChat(req, res) {
     const contextInfo = classifyContext(normalizedMessage, languageInfo);
     const safetyInfo = safetyGuard(normalizedMessage, contextInfo);
 
-    const haloOutput = reasoningEngine({
-      context: contextInfo.category,
-      normalizedMessage,
-      language: languageInfo === "ar" ? "ar" : "en"
+    const isArabic =
+      (typeof languageInfo === "string" &&
+        (languageInfo === "ar" || languageInfo === "arabic")) ||
+      (languageInfo &&
+        typeof languageInfo === "object" &&
+        (languageInfo.language === "arabic" ||
+          languageInfo.language === "ar"));
+
+    const haloOutput = await reasoningEngine({
+      message: normalizedMessage,
+      context: contextInfo.category || "general",
+      language: isArabic ? "ar" : "en",
+      safety: safetyInfo || {}
     });
 
     return res.status(200).json({
@@ -27,12 +36,16 @@ async function handleChat(req, res) {
       reflection: haloOutput.reflection,
       question: haloOutput.question,
       micro_step: haloOutput.micro_step,
-      safety_flag: safetyInfo.flag,
+      safety_flag: safetyInfo.flag || "none",
       memory_update: haloOutput.memory_update,
       meta: {
         context: contextInfo,
         language: languageInfo,
         safety: safetyInfo
+      },
+      engine: haloOutput.engine || {
+        source: "fallback",
+        model: "rule-based"
       }
     });
   } catch (err) {
