@@ -99,13 +99,6 @@ function buildFallbackResponse(options) {
   };
 }
 
-function buildEngineMeta(source, modelId) {
-  return {
-    source: source || "fallback",
-    model: modelId || (source === "llm" ? (process.env.LLM_MODEL || "gpt-4o") : "rule-based")
-  };
-}
-
 async function generateResponse(options) {
   const safeOptions = options && typeof options === "object" ? options : {};
   const message = safeOptions.message || safeOptions.text || "";
@@ -115,15 +108,12 @@ async function generateResponse(options) {
   const memory = safeOptions.memory || {};
   const lastReasoning = safeOptions.lastReasoning || null;
 
-  const modelId = process.env.LLM_MODEL || "gpt-4o";
-
   const fallback = buildFallbackResponse({
     message,
     language,
     context
   });
 
-  // لو مفيش إعدادات LLM → نرجع fallback ومعاه engine=fallback
   if (!isConfigured()) {
     return {
       reflection: fallback.reflection,
@@ -135,7 +125,10 @@ async function generateResponse(options) {
         mood_delta: "",
         hesitation_signal: false
       },
-      engine: buildEngineMeta("fallback", "rule-based")
+      engine: {
+        source: "fallback",
+        model: "rule-based"
+      }
     };
   }
 
@@ -151,7 +144,7 @@ async function generateResponse(options) {
 
     const llmResult = await callLLM({
       prompt,
-      model: modelId,
+      model: process.env.LLM_MODEL || "gpt-4o",
       temperature: 0.4,
       max_tokens: 256
     });
@@ -167,7 +160,12 @@ async function generateResponse(options) {
           mood_delta: "",
           hesitation_signal: false
         },
-        engine: buildEngineMeta("fallback", "rule-based")
+        engine: llmResult && llmResult.engine
+          ? llmResult.engine
+          : {
+              source: "fallback",
+              model: "rule-based"
+            }
       };
     }
 
@@ -202,7 +200,10 @@ async function generateResponse(options) {
           mood_delta: "",
           hesitation_signal: false
         },
-        engine: buildEngineMeta("fallback", "rule-based")
+        engine: llmResult.engine || {
+          source: "fallback",
+          model: "rule-based"
+        }
       };
     }
 
@@ -216,7 +217,10 @@ async function generateResponse(options) {
         mood_delta: "",
         hesitation_signal: false
       },
-      engine: buildEngineMeta("llm", modelId)
+      engine: llmResult.engine || {
+        source: "llm",
+        model: process.env.LLM_MODEL || "gpt-4o"
+      }
     };
   } catch (err) {
     return {
@@ -229,7 +233,10 @@ async function generateResponse(options) {
         mood_delta: "",
         hesitation_signal: false
       },
-      engine: buildEngineMeta("fallback", "rule-based")
+      engine: {
+        source: "fallback",
+        model: "rule-based"
+      }
     };
   }
 }
