@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>HALO Day-1 Client</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0b1020;
+      color: #f5f7ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .halo-container {
+      width: 100%;
+      max-width: 900px;
+      background: #111729;
+      border-radius: 18px;
+      padding: 24px 24px 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .halo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .halo-title {
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .halo-pill {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(0, 255, 200, 0.12);
+      color: #6fffd9;
+      border: 1px solid rgba(0, 255, 200, 0.3);
+    }
+
+    .halo-subtitle {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 12px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .input-row textarea {
+      flex: 1;
+      min-height: 70px;
+      max-height: 140px;
+      resize: vertical;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: #070b16;
+      color: #f5f7ff;
+      font-size: 14px;
+      line-height: 1.5;
+      outline: none;
+    }
+
+    .input-row textarea:focus {
+      border-color: rgba(0, 255, 200, 0.7);
+      box-shadow: 0 0 0 1px rgba(0, 255, 200, 0.25);
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .controls button {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00ffc6, #39a7ff);
+      color: #02030a;
+      box-shadow: 0 10px 30px rgba(0, 255, 200, 0.18);
+      min-width: 120px;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-primary:not(:disabled):active {
+      transform: translateY(1px);
+      box-shadow: 0 5px 14px rgba(0, 255, 200, 0.18);
+    }
+
+    .user-id-input {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: #070b16;
+      color: #f5f7ff;
+      font-size: 11px;
+      width: 140px;
+      outline: none;
+    }
+
+    .user-id-input:focus {
+      border-color: rgba(0, 255, 200, 0.7);
+      box-shadow: 0 0 0 1px rgba(0, 255, 200, 0.25);
+    }
+
+    .halo-response {
+      margin-top: 14px;
+      padding: 14px 14px 10px;
+      border-radius: 14px;
+      background: #070b16;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .halo-response-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .halo-response-title {
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    .halo-badges {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      opacity: 0.8;
+    }
+
+    .badge-lang {
+      border-color: rgba(0, 255, 200, 0.6);
+      color: #6fffd9;
+    }
+
+    .badge-context {
+      border-color: rgba(75, 183, 255, 0.6);
+      color: #76c3ff;
+    }
+
+    .badge-safety-none {
+      border-color: rgba(144, 238, 144, 0.7);
+      color: #90ee90;
+    }
+
+    .badge-safety-flag {
+      border-color: rgba(255, 120, 120, 0.85);
+      color: #ff9e9e;
+    }
+
+    .halo-line {
+      margin-bottom: 6px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      direction: rtl;
+    }
+
+    .halo-line-label {
+      font-weight: 500;
+      opacity: 0.85;
+      min-width: 64px;
+      text-align: left;
+    }
+
+    .halo-line-text {
+      opacity: 0.96;
+    }
+
+    .halo-meta {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      opacity: 0.7;
+      direction: ltr;
+    }
+
+    .halo-meta-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .halo-status {
+      margin-top: 8px;
+      font-size: 11px;
+      opacity: 0.7;
+      min-height: 14px;
+    }
+
+    .halo-status.error {
+      color: #ff9e9e;
+      opacity: 0.9;
+    }
+
+    .halo-status.ok {
+      color: #6fffd9;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 640px) {
+      .halo-container {
+        margin: 12px;
+        padding: 18px 16px 14px;
+      }
+
+      .input-row {
+        flex-direction: column;
+      }
+
+      .controls {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .user-id-input {
+        width: 50%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="halo-container">
+    <div class="halo-header">
+      <div>
+        <div class="halo-title">
+          HALO
+          <span class="halo-pill">Day-1 Client · GPT-4o</span>
+        </div>
+        <div class="halo-subtitle">
+          اكتب جملة واحدة عن حالتك أو يومك، HALO هيرد عليك في ٣ أسطر.
+        </div>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <textarea id="messageInput" placeholder="اكتب هنا بالعربي أو بالإنجليزي..."></textarea>
+      <div class="controls">
+        <button id="sendButton" class="btn-primary">إرسال إلى HALO</button>
+        <input id="userIdInput" class="user-id-input" type="text" value="test-user-1" />
+      </div>
+    </div>
+
+    <div id="status" class="halo-status"></div>
+
+    <div class="halo-response">
+      <div class="halo-response-header">
+        <div class="halo-response-title">رد HALO</div>
+        <div class="halo-badges">
+          <span id="badgeLanguage" class="badge badge-lang">lang: --</span>
+          <span id="badgeContext" class="badge badge-context">context: --</span>
+          <span id="badgeSafety" class="badge badge-safety-none">safety: none</span>
+        </div>
+      </div>
+
+      <div class="halo-line">
+        <div class="halo-line-label">Reflection:</div>
+        <div id="reflectionText" class="halo-line-text">–</div>
+      </div>
+      <div class="halo-line">
+        <div class="halo-line-label">Question:</div>
+        <div id="questionText" class="halo-line-text">–</div>
+      </div>
+      <div class="halo-line">
+        <div class="halo-line-label">Micro-step:</div>
+        <div id="microstepText" class="halo-line-text">–</div>
+      </div>
+
+      <div class="halo-meta">
+        <div class="halo-meta-col">
+          <div id="metaUser">user: –</div>
+          <div id="metaMood">mood: –</div>
+        </div>
+        <div class="halo-meta-col">
+          <div id="metaContextRaw">raw: –</div>
+          <div id="metaUpdated">updated: –</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiUrl = "http://localhost:4000/api/chat";
+
+    const messageInput = document.getElementById("messageInput");
+    const userIdInput = document.getElementById("userIdInput");
+    const sendButton = document.getElementById("sendButton");
+
+    const statusEl = document.getElementById("status");
+    const reflectionEl = document.getElementById("reflectionText");
+    const questionEl = document.getElementById("questionText");
+    const microstepEl = document.getElementById("microstepText");
+
+    const badgeLanguage = document.getElementById("badgeLanguage");
+    const badgeContext = document.getElementById("badgeContext");
+    const badgeSafety = document.getElementById("badgeSafety");
+
+    const metaUser = document.getElementById("metaUser");
+    const metaMood = document.getElementById("metaMood");
+    const metaContextRaw = document.getElementById("metaContextRaw");
+    const metaUpdated = document.getElementById("metaUpdated");
+
+    function setStatus(text, type) {
+      statusEl.textContent = text || "";
+      statusEl.classList.remove("error", "ok");
+      if (type === "error") statusEl.classList.add("error");
+      if (type === "ok") statusEl.classList.add("ok");
+    }
+
+    async function sendToHalo() {
+      const message = messageInput.value.trim();
+      const userId = userIdInput.value.trim() || "test-user-1";
+
+      if (!message) {
+        setStatus("اكتب رسالة الأول قبل ما تبعت.", "error");
+        return;
+      }
+
+      sendButton.disabled = true;
+      setStatus("جارٍ الاتصال بـ HALO ...", "ok");
+
+      try {
+        const body = {
+          user_id: userId,
+          message: message
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data) {
+          setStatus("حصل خطأ في الاتصال بـ HALO.", "error");
+          return;
+        }
+
+        reflectionEl.textContent = data.reflection || "–";
+        questionEl.textContent = data.question || "–";
+        microstepEl.textContent = data.micro_step || "–";
+
+        const lang = data.meta && data.meta.language && data.meta.language.language ? data.meta.language.language : "--";
+        const contextHalo = data.meta && data.meta.context_halo ? data.meta.context_halo : "--";
+        const safetyFlag = data.safety_flag || (data.meta && data.meta.safety && data.meta.safety.flag) || "none";
+
+        badgeLanguage.textContent = "lang: " + lang;
+        badgeContext.textContent = "context: " + contextHalo;
+
+        badgeSafety.textContent = "safety: " + safetyFlag;
+        badgeSafety.classList.remove("badge-safety-none", "badge-safety-flag");
+        if (safetyFlag === "none") {
+          badgeSafety.classList.add("badge-safety-none");
+        } else {
+          badgeSafety.classList.add("badge-safety-flag");
+        }
+
+        if (data.memory_snapshot) {
+          metaUser.textContent = "user: " + (data.memory_snapshot.userId || userId);
+          metaMood.textContent = "mood: " + (data.memory_snapshot.lastMood || "–");
+          metaUpdated.textContent = "updated: " + (data.memory_snapshot.lastUpdatedAt || "–");
+        } else {
+          metaUser.textContent = "user: " + userId;
+          metaMood.textContent = "mood: –";
+          metaUpdated.textContent = "updated: –";
+        }
+
+        if (data.meta && data.meta.context_raw) {
+          const cat = data.meta.context_raw.category || "--";
+          const len = typeof data.meta.context_raw.messageLength === "number" ? data.meta.context_raw.messageLength : "--";
+          metaContextRaw.textContent = "raw: " + cat + " · len=" + len;
+        } else {
+          metaContextRaw.textContent = "raw: –";
+        }
+
+        setStatus("تم استلام رد HALO بنجاح.", "ok");
+      } catch (err) {
+        setStatus("خطأ في الاتصال أو في استجابة السيرفر.", "error");
+      } finally {
+        sendButton.disabled = false;
+      }
+    }
+
+    sendButton.addEventListener("click", sendToHalo);
+
+    messageInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        sendToHalo();
+      }
+    });
+  </script>
+</body>
+</html>
