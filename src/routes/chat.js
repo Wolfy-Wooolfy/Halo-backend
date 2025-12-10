@@ -9,6 +9,8 @@ const messageNormalizer = require("../engines/messageNormalizer");
 const languageDetector = require("../engines/languageDetector");
 const contextClassifier = require("../engines/contextClassifier");
 
+const { decideRoute } = require("../engines/routingEngine");
+
 function getNormalizeFn() {
   if (typeof messageNormalizer === "function") return messageNormalizer;
   if (messageNormalizer && typeof messageNormalizer.normalize === "function")
@@ -52,7 +54,8 @@ function resolveLanguageCode(languageInfo) {
   if (!languageInfo) return "en";
 
   if (typeof languageInfo === "string") {
-    if (languageInfo.toLowerCase() === "arabic" || languageInfo.toLowerCase() === "ar") {
+    const lowered = languageInfo.toLowerCase();
+    if (lowered === "arabic" || lowered === "ar") {
       return "ar";
     }
     return "en";
@@ -96,13 +99,27 @@ router.post("/chat", async (req, res) => {
     const haloContext = mapContextForHalo(rawContextInfo.category);
     const previousMemory = getUserMemory(userId);
 
+    const routeDecision = decideRoute({
+      normalizedMessage,
+      message: normalizedMessage,
+      language: langCode,
+      context_halo: haloContext,
+      context_raw: rawContextInfo,
+      safety: safetyInfo,
+      memory_snapshot: previousMemory
+    });
+
     const halo = await reasoningEngine.generateResponse({
       message: normalizedMessage,
       language: langCode,
       context: haloContext,
       safety: safetyInfo,
       memory: previousMemory || {},
-      lastReasoning: previousMemory && previousMemory.lastReasoning ? previousMemory.lastReasoning : null
+      lastReasoning:
+        previousMemory && previousMemory.lastReasoning
+          ? previousMemory.lastReasoning
+          : null,
+      route: routeDecision
     });
 
     const memoryResult = updateUserMemory({
@@ -130,7 +147,8 @@ router.post("/chat", async (req, res) => {
       },
       memory_snapshot: memoryResult.memory,
       memory_delta: memoryResult.delta,
-      previous_memory: previousMemory
+      previous_memory: previousMemory,
+      routing: routeDecision
     });
   } catch (err) {
     console.error("HALO /chat error:", err);
