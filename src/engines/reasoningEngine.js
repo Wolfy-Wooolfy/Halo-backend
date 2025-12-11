@@ -99,6 +99,20 @@ function buildFallbackResponse(options) {
   };
 }
 
+function buildMemoryUpdate(options) {
+  const context = options && options.context ? String(options.context) : "general";
+  const message = options && options.message ? String(options.message) : "";
+  const safety = options && options.safety ? options.safety : {};
+
+  return {
+    last_topic: context,
+    last_message_preview: message.slice(0, 200),
+    last_safety_flag: safety.flag || "none",
+    mood_delta: "",
+    hesitation_signal: false
+  };
+}
+
 async function generateResponse(options) {
   const safeOptions = options && typeof options === "object" ? options : {};
   const message = safeOptions.message || safeOptions.text || "";
@@ -107,6 +121,7 @@ async function generateResponse(options) {
   const safety = safeOptions.safety || {};
   const memory = safeOptions.memory || {};
   const lastReasoning = safeOptions.lastReasoning || null;
+  const route = safeOptions.route || {};
 
   const fallback = buildFallbackResponse({
     message,
@@ -114,17 +129,19 @@ async function generateResponse(options) {
     context
   });
 
-  if (!isConfigured()) {
+  const llmAllowedByRoute =
+    typeof route.useLLM === "boolean" ? route.useLLM : true;
+
+  const llmAvailable = isConfigured();
+  const isHighRisk = safety.flag === "high_risk" || safety.level === "high";
+
+  if (!message || !llmAvailable || !llmAllowedByRoute || isHighRisk) {
     return {
       reflection: fallback.reflection,
       question: fallback.question,
       micro_step: fallback.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
-      memory_update: {
-        last_topic: context,
-        mood_delta: "",
-        hesitation_signal: false
-      },
+      memory_update: buildMemoryUpdate({ message, context, safety }),
       engine: {
         source: "fallback",
         model: "rule-based"
@@ -142,11 +159,23 @@ async function generateResponse(options) {
       lastReasoning
     });
 
+    const maxTokens =
+      typeof route.maxTokens === "number"
+        ? route.maxTokens
+        : typeof route.max_tokens === "number"
+        ? route.max_tokens
+        : 256;
+
+    const temperature =
+      typeof route.temperature === "number" ? route.temperature : 0.4;
+
+    const model = route.model || process.env.LLM_MODEL || "gpt-4o";
+
     const llmResult = await callLLM({
       prompt,
-      model: process.env.LLM_MODEL || "gpt-4o",
-      temperature: 0.4,
-      max_tokens: 256
+      model,
+      temperature,
+      maxTokens
     });
 
     if (!llmResult || !llmResult.success) {
@@ -155,11 +184,7 @@ async function generateResponse(options) {
         question: fallback.question,
         micro_step: fallback.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
-        memory_update: {
-          last_topic: context,
-          mood_delta: "",
-          hesitation_signal: false
-        },
+        memory_update: buildMemoryUpdate({ message, context, safety }),
         engine: llmResult && llmResult.engine
           ? llmResult.engine
           : {
@@ -169,25 +194,46 @@ async function generateResponse(options) {
       };
     }
 
-    const raw = llmResult.raw || {};
     let text = "";
+    let parsed = null;
 
-    if (raw && Array.isArray(raw.choices) && raw.choices[0]) {
-      const choice = raw.choices[0];
-      if (typeof choice.text === "string") {
-        text = choice.text;
-      } else if (choice.message && typeof choice.message.content === "string") {
-        text = choice.message.content;
+    if (llmResult.output) {
+      if (typeof llmResult.output === "string") {
+        text = llmResult.output;
+      } else if (typeof llmResult.output === "object") {
+        parsed = {
+          reflection: llmResult.output.reflection || "",
+          question: llmResult.output.question || "",
+          micro_step:
+            llmResult.output.micro_step || llmResult.output.microStep || ""
+        };
       }
-    } else if (typeof raw.output === "string") {
-      text = raw.output;
-    } else if (typeof raw.result === "string") {
-      text = raw.result;
-    } else if (typeof raw.content === "string") {
-      text = raw.content;
     }
 
-    const parsed = extractHaloLinesFromLLMText(text);
+    if (!parsed && !text) {
+      const raw = llmResult.raw || {};
+      if (raw && Array.isArray(raw.choices) && raw.choices[0]) {
+        const choice = raw.choices[0];
+        if (typeof choice.text === "string") {
+          text = choice.text;
+        } else if (
+          choice.message &&
+          typeof choice.message.content === "string"
+        ) {
+          text = choice.message.content;
+        }
+      } else if (typeof raw.output === "string") {
+        text = raw.output;
+      } else if (typeof raw.result === "string") {
+        text = raw.result;
+      } else if (typeof raw.content === "string") {
+        text = raw.content;
+      }
+    }
+
+    if (!parsed && text) {
+      parsed = extractHaloLinesFromLLMText(text);
+    }
 
     if (!parsed) {
       return {
@@ -195,11 +241,7 @@ async function generateResponse(options) {
         question: fallback.question,
         micro_step: fallback.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
-        memory_update: {
-          last_topic: context,
-          mood_delta: "",
-          hesitation_signal: false
-        },
+        memory_update: buildMemoryUpdate({ message, context, safety }),
         engine: llmResult.engine || {
           source: "fallback",
           model: "rule-based"
@@ -212,14 +254,10 @@ async function generateResponse(options) {
       question: parsed.question,
       micro_step: parsed.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
-      memory_update: {
-        last_topic: context,
-        mood_delta: "",
-        hesitation_signal: false
-      },
+      memory_update: buildMemoryUpdate({ message, context, safety }),
       engine: llmResult.engine || {
         source: "llm",
-        model: process.env.LLM_MODEL || "gpt-4o"
+        model
       }
     };
   } catch (err) {
@@ -228,11 +266,7 @@ async function generateResponse(options) {
       question: fallback.question,
       micro_step: fallback.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
-      memory_update: {
-        last_topic: context,
-        mood_delta: "",
-        hesitation_signal: false
-      },
+      memory_update: buildMemoryUpdate({ message, context, safety }),
       engine: {
         source: "fallback",
         model: "rule-based"
