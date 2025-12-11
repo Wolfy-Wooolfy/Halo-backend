@@ -35,10 +35,8 @@ function buildBehaviorLayer(language) {
   if (isArabic) {
     return [
       "قواعد السلوك:",
-      "الرد دائمًا يكون في ثلاث جمل فقط لا غير:",
-      "الجملة الأولى: انعكاس قصير على ما يقوله المستخدم (Reflection).",
-      "الجملة الثانية: سؤال توضيحي واحد فقط (Clarifying Question).",
-      "الجملة الثالثة: خطوة صغيرة جدًا يمكن تنفيذها الآن (Micro-step).",
+      "الرد دائمًا يكون في صورة ثلاث مكوّنات فقط: انعكاس قصير، سؤال توضيحي واحد، وخطوة صغيرة جدًا.",
+      "كل مكوّن يكون في جملة قصيرة واحدة فقط.",
       "لا تكتب فقرات طويلة، ولا خطط متعددة الخطوات، ولا نصائح مطولة.",
       "لا تشرح أسباب المشاعر، ولا تحاول إصلاح حياة المستخدم، فقط خطوة صغيرة واحدة."
     ].join(" ");
@@ -46,10 +44,8 @@ function buildBehaviorLayer(language) {
 
   return [
     "Behavior rules:",
-    "Your reply must always be exactly three sentences.",
-    "Sentence 1: a short reflection on what the user expressed.",
-    "Sentence 2: a single clarifying question.",
-    "Sentence 3: one very small, concrete micro-step the user can take now.",
+    "Your reply must always contain exactly three components: a short reflection, one clarifying question, and one very small micro-step.",
+    "Each component must be a single short sentence.",
     "Do not write long paragraphs, do not provide multi-step plans, and do not offer extended advice.",
     "Do not explain the causes of feelings or try to fix the user's life. Only offer one tiny next move."
   ].join(" ");
@@ -67,7 +63,7 @@ function buildSafetyLayer(safety, context, language) {
         "وضع الأمان:",
         "اعتبر أن المستخدم في حالة حساسة أو خطرة.",
         "قلل العمق تمامًا، تجنب أي نصائح، ولا تقترح قرارات كبيرة.",
-        "استخدم جملة انعكاس بسيطة، سؤال توضيحي خفيف، وخطوة تهدئة أو تنظيم بسيطة فقط.",
+        "استخدم انعكاس بسيط، سؤال توضيحي خفيف، وخطوة تهدئة أو تنظيم بسيطة فقط.",
         "لا تذكر أدوية، ولا تشخيصات، ولا إحالات طبية مباشرة، فقط شجع المستخدم على طلب مساعدة من شخص موثوق أو مختص إذا لزم الأمر."
       ].join(" ");
     }
@@ -84,7 +80,7 @@ function buildSafetyLayer(safety, context, language) {
     return [
       "وضع الأمان:",
       "لا توجد إشارات خطورة عالية في الرسالة.",
-      "حافظ رغم ذلك على بساطة الرد، وتجنب الكلام العميق أو الحساس، والتزم بثلاث جمل فقط."
+      "حافظ رغم ذلك على بساطة الرد، وتجنب الكلام العميق أو الحساس."
     ].join(" ");
   }
 
@@ -110,7 +106,7 @@ function buildSafetyLayer(safety, context, language) {
   return [
     "Safety mode:",
     "No high-risk signals are detected, but you must still keep the reply minimal, safe, and emotionally neutral-supportive.",
-    "Avoid deep analysis or sensitive topics. Respect the three-sentence rule at all times."
+    "Avoid deep analysis or sensitive topics."
   ].join(" ");
 }
 
@@ -185,22 +181,43 @@ function buildTaskSection(message, language) {
     return [
       "المهمة:",
       "اقرأ رسالة المستخدم جيدًا، وافهم حالته الحالية بأبسط صورة ممكنة.",
-      "بعد ذلك، أنشئ ردًا من ثلاث جمل فقط بالضبط:",
-      "1) انعكاس قصير يوضح أنك استوعبت ما يقوله.",
-      "2) سؤال توضيحي واحد يساعده يحدد نقطة واحدة نكمل منها.",
-      "3) خطوة صغيرة جدًا يمكنه تنفيذها الآن أو خلال اليوم.",
-      "اكتب الرد باللغة العربية، وبأسلوب طبيعي بسيط، ويفضل أن يكون قريب من لهجة المستخدم قدر الإمكان من غير تكلف."
+      "بعد ذلك، لا تكتب ردًا نصيًا عاديًا، ولكن أرجِع ناتجًا في صورة كائن JSON فقط.",
+      "هذا الـ JSON يجب أن يحتوي بالضبط على ثلاثة مفاتيح نصية:",
+      "reflection, question, micro_step",
+      "كل مفتاح يحتوي على جملة قصيرة واحدة فقط باللغة العربية."
     ].join(" ");
   }
 
   return [
     "Task:",
     "Read the user's message carefully and understand their current state in the simplest possible way.",
-    "Then generate exactly three sentences:",
-    "1) A short reflection showing you understood what they said.",
-    "2) One clarifying question that helps them choose a single point to continue from.",
-    "3) One very small, concrete micro-step they can take now or later today.",
-    "Write the reply in the user's language (English here), using simple, natural wording."
+    "Then do NOT write a normal textual reply. Instead, return a JSON object only.",
+    "This JSON must contain exactly three string fields:",
+    "reflection, question, micro_step",
+    "Each field must be a single short sentence in the appropriate language."
+  ].join(" ");
+}
+
+function buildOutputFormatSection(language) {
+  const isArabic = normalizeLanguage(language) === "ar";
+  if (isArabic) {
+    return [
+      "تنسيق المخرج:",
+      "أرجِع كائن JSON واحد فقط بدون أي نص قبلَه أو بعدَه.",
+      "يجب أن يكون بالشكل التالي (مثال توضيحي، مع استبدال القيم الفعلية):",
+      '{ "reflection": "جملة واحدة قصيرة تعكس ما قاله المستخدم.", "question": "سؤال توضيحي واحد قصير.", "micro_step": "خطوة صغيرة جدًا يمكن تنفيذها الآن." }',
+      "ممنوع إضافة أي مفاتيح أخرى غير reflection و question و micro_step.",
+      "ممنوع إضافة أي نص خارج كائن الـ JSON."
+    ].join(" ");
+  }
+
+  return [
+    "Output format:",
+    "You must return a single JSON object only, with no text before or after it.",
+    "The structure must be exactly like this (with appropriate actual values):",
+    '{ "reflection": "One short sentence reflecting the user.", "question": "One short clarifying question.", "micro_step": "One very small step the user can take now." }',
+    "Do not add any other keys besides reflection, question, and micro_step.",
+    "Do not add any text outside the JSON object."
   ].join(" ");
 }
 
@@ -235,6 +252,7 @@ function buildHaloPrompt(options) {
   const safetyLayer = buildSafetyLayer(safety, context, language);
   const memorySummary = buildMemorySummaryFromSnapshot(memorySnapshot, language);
   const taskSection = buildTaskSection(message, language);
+  const outputFormatSection = buildOutputFormatSection(language);
   const userBlock = buildUserMessageBlock(message, language);
 
   const sections = [];
@@ -252,6 +270,9 @@ function buildHaloPrompt(options) {
   sections.push("");
   sections.push("TASK:");
   sections.push(taskSection);
+  sections.push("");
+  sections.push("OUTPUT FORMAT:");
+  sections.push(outputFormatSection);
   sections.push("");
   sections.push(userBlock);
 
