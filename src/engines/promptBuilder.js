@@ -111,39 +111,39 @@ function buildSafetyLayer(safety, context, language) {
 }
 
 function buildMemorySummaryFromSnapshot(memory, language) {
+  const isArabic = normalizeLanguage(language) === "ar";
+
   if (!memory) {
-    const isArabic = normalizeLanguage(language) === "ar";
     if (isArabic) {
       return "لا توجد ذاكرة سابقة متاحة تقريبًا. اعتبر أن هذه واحدة من أولى المحادثات مع المستخدم، فحافظ على بساطة شديدة وعدم افتراض أي تاريخ أو تفاصيل عن حياته.";
     }
     return "Very little previous memory is available. Treat this as one of the first interactions with the user; do not assume any detailed history or personal story.";
   }
 
-  const isArabic = normalizeLanguage(language) === "ar";
   const parts = [];
 
-  const lastTopic = memory.last_topic || memory.lastTopic;
-  const lastEmotion = memory.last_emotion_label || memory.lastEmotionLabel;
-  const energy = memory.energy_level || memory.energyLevel;
-  const engagement = memory.engagement_style || memory.engagementStyle;
-  const moodTrend = memory.mood_7_days || memory.mood7days || memory.mood_history;
+  const lastTopic = memory.lastTopic || memory.last_topic || "";
+  const lastContext = memory.lastContext || memory.last_context || "";
+  const hesitation = !!(memory.hesitationSignal || memory.hesitation_signal);
+
+  const signalCodes = Array.isArray(memory.lastSignalCodes)
+    ? memory.lastSignalCodes
+    : Array.isArray(memory.last_signal_codes)
+      ? memory.last_signal_codes
+      : [];
+
+  const moodHistory = Array.isArray(memory.moodHistory) ? memory.moodHistory : [];
+  const moodTrend = moodHistory
+    .slice(-7)
+    .map((x) => (x && x.mood ? String(x.mood) : ""))
+    .filter(Boolean);
 
   if (isArabic) {
-    if (lastTopic) {
-      parts.push("آخر موضوع ظاهر في الذاكرة: " + String(lastTopic));
-    }
-    if (lastEmotion) {
-      parts.push("آخر حالة شعورية مسجلة: " + String(lastEmotion));
-    }
-    if (energy) {
-      parts.push("مستوى الطاقة التقريبي: " + String(energy));
-    }
-    if (engagement) {
-      parts.push("أسلوب التفاعل الغالب: " + String(engagement));
-    }
-    if (Array.isArray(moodTrend) && moodTrend.length > 0) {
-      parts.push("توجه المزاج في الأيام السابقة (مبسط): " + moodTrend.join(", "));
-    }
+    if (lastTopic) parts.push("آخر موضوع (إشارة عامة): " + String(lastTopic));
+    if (lastContext) parts.push("آخر سياق عام: " + String(lastContext));
+    if (hesitation) parts.push("إشارة تردد/ضغط: موجودة");
+    if (signalCodes.length) parts.push("أكواد إشارات حديثة: " + signalCodes.slice(0, 10).join(", "));
+    if (moodTrend.length) parts.push("توجه المزاج (مبسط): " + moodTrend.join(" → "));
 
     if (parts.length === 0) {
       return "الذاكرة الحالية خفيفة جدًا ولا تحتوي على تفاصيل كثيرة. تعامل مع المستخدم كأنه يبدأ صفحة جديدة، وركز على الحاضر فقط.";
@@ -152,21 +152,11 @@ function buildMemorySummaryFromSnapshot(memory, language) {
     return "ملخص سياق المستخدم (من الذاكرة الميتاداتية):\n- " + parts.join("\n- ");
   }
 
-  if (lastTopic) {
-    parts.push("Last topic: " + String(lastTopic));
-  }
-  if (lastEmotion) {
-    parts.push("Last emotion label: " + String(lastEmotion));
-  }
-  if (energy) {
-    parts.push("Approximate energy level: " + String(energy));
-  }
-  if (engagement) {
-    parts.push("Interaction style: " + String(engagement));
-  }
-  if (Array.isArray(moodTrend) && moodTrend.length > 0) {
-    parts.push("Recent mood trend (simplified): " + moodTrend.join(", "));
-  }
+  if (lastTopic) parts.push("Last topic (signal): " + String(lastTopic));
+  if (lastContext) parts.push("Last context: " + String(lastContext));
+  if (hesitation) parts.push("Hesitation/stress signal: present");
+  if (signalCodes.length) parts.push("Recent signal codes: " + signalCodes.slice(0, 10).join(", "));
+  if (moodTrend.length) parts.push("Recent mood trend (simplified): " + moodTrend.join(" → "));
 
   if (parts.length === 0) {
     return "Current memory is very light. Treat the user as if they are starting fresh today and focus on this moment only.";
