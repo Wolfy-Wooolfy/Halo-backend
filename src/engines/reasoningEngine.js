@@ -1,6 +1,16 @@
 const { buildHaloPrompt } = require("./promptBuilder");
 const { callLLM, isConfigured } = require("./llmClient");
 
+function normalizeText(s) {
+  return String(s || "").trim();
+}
+
+function buildPreview(text) {
+  const t = normalizeText(text).replace(/\s+/g, " ");
+  if (!t) return "";
+  return t.length > 80 ? t.slice(0, 80) : t;
+}
+
 function extractHaloLinesFromLLMText(text) {
   if (!text || typeof text !== "string") {
     return null;
@@ -13,8 +23,8 @@ function extractHaloLinesFromLLMText(text) {
 
   const parts = cleaned
     .split(/[\.!\?؟]+/)
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
 
   if (parts.length < 2) {
     return null;
@@ -32,7 +42,6 @@ function extractHaloLinesFromLLMText(text) {
 }
 
 function buildFallbackResponse(options) {
-  const message = options && options.message ? String(options.message) : "";
   const language = options && options.language ? String(options.language) : "en";
   const context = options && options.context ? String(options.context) : "general";
 
@@ -101,15 +110,31 @@ function buildFallbackResponse(options) {
 
 function buildMemoryUpdate(options) {
   const context = options && options.context ? String(options.context) : "general";
-  const message = options && options.message ? String(options.message) : "";
   const safety = options && options.safety ? options.safety : {};
+  const message = options && options.message ? String(options.message) : "";
+  const memory = options && options.memory && typeof options.memory === "object" ? options.memory : {};
+
+  const preview = buildPreview(message);
+  const lastTopic = normalizeText(memory.lastTopic || memory.last_topic || "");
+  const lastContext = normalizeText(context);
+  const lastSafetyFlag = normalizeText((safety && safety.flag) || "none");
+
+  const lastSignalCodes = Array.isArray(memory.lastSignalCodes)
+    ? memory.lastSignalCodes.slice(0, 30)
+    : Array.isArray(memory.last_signal_codes)
+      ? memory.last_signal_codes.slice(0, 30)
+      : [];
+
+  const hesitation = !!(memory.hesitationSignal || memory.hesitation_signal);
 
   return {
-    last_topic: context,
-    last_message_preview: message.slice(0, 200),
-    last_safety_flag: safety.flag || "none",
+    last_topic: lastTopic,
+    last_message_preview: preview,
+    last_safety_flag: lastSafetyFlag,
     mood_delta: "",
-    hesitation_signal: false
+    hesitation_signal: hesitation,
+    last_context: lastContext,
+    last_signal_codes: lastSignalCodes
   };
 }
 
@@ -124,14 +149,11 @@ async function generateResponse(options) {
   const route = safeOptions.route || {};
 
   const fallback = buildFallbackResponse({
-    message,
     language,
     context
   });
 
-  const llmAllowedByRoute =
-    typeof route.useLLM === "boolean" ? route.useLLM : true;
-
+  const llmAllowedByRoute = typeof route.useLLM === "boolean" ? route.useLLM : true;
   const llmAvailable = isConfigured();
   const isHighRisk = safety.flag === "high_risk" || safety.level === "high";
 
@@ -141,7 +163,7 @@ async function generateResponse(options) {
       question: fallback.question,
       micro_step: fallback.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
-      memory_update: buildMemoryUpdate({ message, context, safety }),
+      memory_update: buildMemoryUpdate({ message, context, safety, memory }),
       engine: {
         source: "fallback",
         model: "rule-based"
@@ -151,11 +173,11 @@ async function generateResponse(options) {
 
   try {
     const prompt = buildHaloPrompt({
-      userMessage: message,
+      message,
       language,
       context,
       safety,
-      memory,
+      memory_snapshot: memory,
       lastReasoning
     });
 
@@ -163,12 +185,10 @@ async function generateResponse(options) {
       typeof route.maxTokens === "number"
         ? route.maxTokens
         : typeof route.max_tokens === "number"
-        ? route.max_tokens
-        : 256;
+          ? route.max_tokens
+          : 256;
 
-    const temperature =
-      typeof route.temperature === "number" ? route.temperature : 0.4;
-
+    const temperature = typeof route.temperature === "number" ? route.temperature : 0.4;
     const model = route.model || process.env.LLM_MODEL || "gpt-4o";
 
     const llmResult = await callLLM({
@@ -184,13 +204,14 @@ async function generateResponse(options) {
         question: fallback.question,
         micro_step: fallback.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
-        memory_update: buildMemoryUpdate({ message, context, safety }),
-        engine: llmResult && llmResult.engine
-          ? llmResult.engine
-          : {
-              source: "fallback",
-              model: "rule-based"
-            }
+        memory_update: buildMemoryUpdate({ message, context, safety, memory }),
+        engine:
+          llmResult && llmResult.engine
+            ? llmResult.engine
+            : {
+                source: "fallback",
+                model: "rule-based"
+              }
       };
     }
 
@@ -204,8 +225,7 @@ async function generateResponse(options) {
         parsed = {
           reflection: llmResult.output.reflection || "",
           question: llmResult.output.question || "",
-          micro_step:
-            llmResult.output.micro_step || llmResult.output.microStep || ""
+          micro_step: llmResult.output.micro_step || llmResult.output.microStep || ""
         };
       }
     }
@@ -216,10 +236,7 @@ async function generateResponse(options) {
         const choice = raw.choices[0];
         if (typeof choice.text === "string") {
           text = choice.text;
-        } else if (
-          choice.message &&
-          typeof choice.message.content === "string"
-        ) {
+        } else if (choice.message && typeof choice.message.content === "string") {
           text = choice.message.content;
         }
       } else if (typeof raw.output === "string") {
@@ -241,7 +258,7 @@ async function generateResponse(options) {
         question: fallback.question,
         micro_step: fallback.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
-        memory_update: buildMemoryUpdate({ message, context, safety }),
+        memory_update: buildMemoryUpdate({ message, context, safety, memory }),
         engine: llmResult.engine || {
           source: "fallback",
           model: "rule-based"
@@ -254,7 +271,7 @@ async function generateResponse(options) {
       question: parsed.question,
       micro_step: parsed.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
-      memory_update: buildMemoryUpdate({ message, context, safety }),
+      memory_update: buildMemoryUpdate({ message, context, safety, memory }),
       engine: llmResult.engine || {
         source: "llm",
         model
@@ -266,7 +283,7 @@ async function generateResponse(options) {
       question: fallback.question,
       micro_step: fallback.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
-      memory_update: buildMemoryUpdate({ message, context, safety }),
+      memory_update: buildMemoryUpdate({ message, context, safety, memory }),
       engine: {
         source: "fallback",
         model: "rule-based"
