@@ -82,7 +82,16 @@ function extractConstraintSignal(text, lang) {
       "مش قادره",
       "مش عارف",
       "خايف",
-      "قلقان"
+      "قلقان",
+      "توتر",
+      "متوتر",
+      "ضغط",
+      "مضغوط",
+      "سترس",
+      "مرهق",
+      "إرهاق",
+      "تعبان",
+      "مش مرتاح"
     ]);
   } else {
     detected = hasAny(t, [
@@ -95,7 +104,12 @@ function extractConstraintSignal(text, lang) {
       "cannot",
       "afraid",
       "worried",
-      "anxious"
+      "anxious",
+      "stress",
+      "stressed",
+      "overwhelmed",
+      "tired",
+      "exhausted"
     ]);
   }
 
@@ -132,8 +146,8 @@ function extractTopicSignal(text, lang) {
       en: ["relationship", "partner", "spouse", "friend", "family", "feeling", "love", "breakup"]
     },
     self: {
-      ar: ["نفسي", "تطوير", "جيم", "صحة", "نوم", "اكتئاب", "قلق", "تركيز", "عادة"],
-      en: ["myself", "self", "gym", "health", "sleep", "depression", "anxiety", "focus", "habit"]
+      ar: ["نفسي", "تطوير", "جيم", "صحة", "نوم", "اكتئاب", "قلق", "تركيز", "عادة", "توتر", "ضغط", "سترس", "مرهق", "إرهاق", "تعبان"],
+      en: ["myself", "self", "gym", "health", "sleep", "depression", "anxiety", "focus", "habit", "stress", "tired", "exhausted"]
     }
   };
 
