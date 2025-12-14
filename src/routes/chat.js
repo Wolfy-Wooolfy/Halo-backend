@@ -11,9 +11,6 @@ const contextClassifier = require("../engines/contextClassifier");
 
 const { decideRoute } = require("../engines/routingEngine");
 
-const { extractMemoryObjects } = require("../engines/memoryExtractor");
-const { applyMemorySignals } = require("../engines/memorySignalApplier");
-
 function getNormalizeFn() {
   if (typeof messageNormalizer === "function") return messageNormalizer;
   if (messageNormalizer && typeof messageNormalizer.normalize === "function")
@@ -31,6 +28,67 @@ function getLanguageDetectorFn() {
     return languageDetector.detect;
   if (languageDetector && typeof languageDetector.detectLanguage === "function")
     return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
+
   return function () {
     return { language: "mixed", confidence: 0 };
   };
@@ -58,16 +116,28 @@ function resolveLanguageCode(languageInfo) {
 
   if (typeof languageInfo === "string") {
     const lowered = languageInfo.toLowerCase();
-    if (lowered === "arabic" || lowered === "ar") {
-      return "ar";
-    }
+    if (lowered === "ar") return "ar";
+    if (lowered.startsWith("arabic")) return "ar";
+    if (lowered === "en") return "en";
+    if (lowered.startsWith("english")) return "en";
     return "en";
   }
 
   const label = String(languageInfo.language || "").toLowerCase();
 
-  if (label === "arabic" || label === "ar") return "ar";
+  if (label === "ar") return "ar";
+  if (label.startsWith("arabic")) return "ar";
 
+  if (label === "en") return "en";
+  if (label.startsWith("english")) return "en";
+
+  return "en";
+}
+
+function extractLanguageVariant(languageInfo) {
+  if (!languageInfo) return "en";
+  if (typeof languageInfo === "string") return languageInfo;
+  if (languageInfo && typeof languageInfo.language === "string") return languageInfo.language;
   return "en";
 }
 
@@ -99,21 +169,16 @@ router.post("/chat", async (req, res) => {
     const safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
 
     const langCode = resolveLanguageCode(languageInfo);
+    const languageVariant = extractLanguageVariant(languageInfo);
+
     const haloContext = mapContextForHalo(rawContextInfo.category);
     const previousMemory = getUserMemory(userId);
-
-    const extractedMemory = extractMemoryObjects({
-      message: normalizedMessage,
-      contextHalo: haloContext,
-      language: langCode
-    });
-
-    const appliedMemoryUpdate = applyMemorySignals(previousMemory, extractedMemory);
 
     const routeDecision = decideRoute({
       normalizedMessage,
       message: normalizedMessage,
-      language: langCode,
+      language: languageVariant,
+      language_code: langCode,
       context_halo: haloContext,
       context_raw: rawContextInfo,
       safety: safetyInfo,
@@ -122,7 +187,8 @@ router.post("/chat", async (req, res) => {
 
     const halo = await reasoningEngine.generateResponse({
       message: normalizedMessage,
-      language: langCode,
+      language: languageVariant,
+      language_code: langCode,
       context: haloContext,
       safety: safetyInfo,
       memory: previousMemory || {},
@@ -130,20 +196,15 @@ router.post("/chat", async (req, res) => {
         previousMemory && previousMemory.lastReasoning
           ? previousMemory.lastReasoning
           : null,
-      route: routeDecision,
-      memorySignals: extractedMemory
+      route: routeDecision
     });
-
-    halo.memory_update = {
-      ...(halo.memory_update || {}),
-      ...appliedMemoryUpdate
-    };
 
     const memoryResult = updateUserMemory({
       userId,
       normalizedMessage,
       context: haloContext,
       language: langCode,
+      language_variant: languageVariant,
       safetyFlag: safetyInfo.flag,
       reasoning: halo
     });
@@ -160,15 +221,8 @@ router.post("/chat", async (req, res) => {
         language: languageInfo,
         context_raw: rawContextInfo,
         context_halo: haloContext,
-        safety: safetyInfo,
-        memory_extraction: {
-          extracted: !!extractedMemory.extracted,
-          objects_count: Array.isArray(extractedMemory.objects)
-            ? extractedMemory.objects.length
-            : 0
-        }
+        safety: safetyInfo
       },
-      extracted_memory: extractedMemory,
       memory_snapshot: memoryResult.memory,
       memory_delta: memoryResult.delta,
       previous_memory: previousMemory,
