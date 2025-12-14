@@ -1,16 +1,30 @@
 const memoryStore = {};
 
+function normalizeText(s) {
+  return String(s || "").trim();
+}
+
+function buildPreview(text) {
+  const t = normalizeText(text).replace(/\s+/g, " ");
+  if (!t) return "";
+  return t.length > 80 ? t.slice(0, 80) : t;
+}
+
 function buildDefaultMemory(userId) {
   return {
     userId: userId || "anonymous",
     lastMessage: "",
+    lastMessagePreview: "",
     lastContext: null,
     lastLanguage: null,
     lastSafetyFlag: "none",
     lastMood: "neutral",
     lastUpdatedAt: null,
     interactionCount: 0,
-    moodHistory: []
+    moodHistory: [],
+    lastTopic: "",
+    lastSignalCodes: [],
+    hesitationSignal: false
   };
 }
 
@@ -31,6 +45,11 @@ function getUserMemory(userId) {
   return memoryStore[id];
 }
 
+function asArray(val) {
+  if (Array.isArray(val)) return val;
+  return [];
+}
+
 function updateUserMemory(payload) {
   const userId = payload.userId || "anonymous";
   const normalizedMessage = payload.normalizedMessage || "";
@@ -38,25 +57,49 @@ function updateUserMemory(payload) {
   const language = payload.language || "en";
   const safetyFlag = payload.safetyFlag || "none";
 
+  const reasoning = payload.reasoning && typeof payload.reasoning === "object" ? payload.reasoning : {};
+  const mu = reasoning.memory_update && typeof reasoning.memory_update === "object" ? reasoning.memory_update : {};
+
+  const muLastTopic = normalizeText(mu.last_topic);
+  const muLastContext = normalizeText(mu.last_context);
+  const muLastSafetyFlag = normalizeText(mu.last_safety_flag);
+  const muPreview = normalizeText(mu.last_message_preview);
+  const muSignalCodes = asArray(mu.last_signal_codes);
+  const muHesitation = !!mu.hesitation_signal;
+
   const current = getUserMemory(userId);
-  const mood = deriveMood(context, safetyFlag);
+
+  const finalContext = muLastContext ? muLastContext : context;
+  const finalSafety = muLastSafetyFlag ? muLastSafetyFlag : safetyFlag;
+
+  const mood = deriveMood(finalContext, finalSafety);
+
+  const preview = muPreview ? muPreview : buildPreview(normalizedMessage);
+
+  const nextSignalCodes = Array.from(
+    new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
+  ).slice(0, 30);
 
   const updated = {
     ...current,
-    lastMessage: normalizedMessage,
-    lastContext: context,
+    lastMessagePreview: preview,
+    lastMessage: preview,
+    lastContext: finalContext,
     lastLanguage: language,
-    lastSafetyFlag: safetyFlag,
+    lastSafetyFlag: finalSafety,
     lastMood: mood,
     lastUpdatedAt: new Date().toISOString(),
-    interactionCount: current.interactionCount + 1
+    interactionCount: current.interactionCount + 1,
+    lastTopic: muLastTopic ? muLastTopic : normalizeText(current.lastTopic),
+    lastSignalCodes: nextSignalCodes,
+    hesitationSignal: muHesitation || !!current.hesitationSignal
   };
 
   const newMoodEntry = {
     at: updated.lastUpdatedAt,
-    context,
-    safetyFlag,
-    mood
+    context: updated.lastContext,
+    safetyFlag: updated.lastSafetyFlag,
+    mood: updated.lastMood
   };
 
   const history = Array.isArray(current.moodHistory)
@@ -74,7 +117,9 @@ function updateUserMemory(payload) {
     userId,
     interactionCount: updated.interactionCount,
     lastMood: updated.lastMood,
-    lastSafetyFlag: updated.lastSafetyFlag
+    lastSafetyFlag: updated.lastSafetyFlag,
+    lastTopic: updated.lastTopic,
+    hesitationSignal: updated.hesitationSignal
   };
 
   return {
