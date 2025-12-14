@@ -11,6 +11,9 @@ const contextClassifier = require("../engines/contextClassifier");
 
 const { decideRoute } = require("../engines/routingEngine");
 
+const { extractMemoryObjects } = require("../engines/memoryExtractor");
+const { applyMemorySignals } = require("../engines/memorySignalApplier");
+
 function getNormalizeFn() {
   if (typeof messageNormalizer === "function") return messageNormalizer;
   if (messageNormalizer && typeof messageNormalizer.normalize === "function")
@@ -99,6 +102,14 @@ router.post("/chat", async (req, res) => {
     const haloContext = mapContextForHalo(rawContextInfo.category);
     const previousMemory = getUserMemory(userId);
 
+    const extractedMemory = extractMemoryObjects({
+      message: normalizedMessage,
+      contextHalo: haloContext,
+      language: langCode
+    });
+
+    const appliedMemoryUpdate = applyMemorySignals(previousMemory, extractedMemory);
+
     const routeDecision = decideRoute({
       normalizedMessage,
       message: normalizedMessage,
@@ -119,8 +130,14 @@ router.post("/chat", async (req, res) => {
         previousMemory && previousMemory.lastReasoning
           ? previousMemory.lastReasoning
           : null,
-      route: routeDecision
+      route: routeDecision,
+      memorySignals: extractedMemory
     });
+
+    halo.memory_update = {
+      ...(halo.memory_update || {}),
+      ...appliedMemoryUpdate
+    };
 
     const memoryResult = updateUserMemory({
       userId,
@@ -143,8 +160,15 @@ router.post("/chat", async (req, res) => {
         language: languageInfo,
         context_raw: rawContextInfo,
         context_halo: haloContext,
-        safety: safetyInfo
+        safety: safetyInfo,
+        memory_extraction: {
+          extracted: !!extractedMemory.extracted,
+          objects_count: Array.isArray(extractedMemory.objects)
+            ? extractedMemory.objects.length
+            : 0
+        }
       },
+      extracted_memory: extractedMemory,
       memory_snapshot: memoryResult.memory,
       memory_delta: memoryResult.delta,
       previous_memory: previousMemory,
