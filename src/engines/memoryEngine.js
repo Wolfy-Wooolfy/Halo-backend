@@ -45,6 +45,10 @@ function getUserMemory(userId) {
   return memoryStore[id];
 }
 
+function getUserMemorySnapshot(userId) {
+  return getUserMemory(userId || "anonymous");
+}
+
 function asArray(val) {
   if (Array.isArray(val)) return val;
   return [];
@@ -130,5 +134,6 @@ function updateUserMemory(payload) {
 
 module.exports = {
   getUserMemory,
+  getUserMemorySnapshot,
   updateUserMemory
 };
