@@ -19,114 +19,150 @@ function detectLanguageHeuristic(text) {
   return arabicChars >= latinChars ? "ar" : "en";
 }
 
-function extractPersonCandidatesAr(text) {
-  const t = normalizeText(text);
-  const matches = t.match(/(?:اسمه|اسمها|اسمي|الشخص ده|الراجل ده|الست دي|الواد ده|البنت دي)\s+([^\s،.!?]{2,30})/g);
-  if (!matches) return [];
-  const out = [];
-  for (const m of matches) {
-    const name = m.replace(/^(اسمه|اسمها|اسمي|الشخص ده|الراجل ده|الست دي|الواد ده|البنت دي)\s+/, "").trim();
-    if (name && name.length >= 2) out.push(name);
-  }
-  return Array.from(new Set(out));
-}
-
-function extractPersonCandidatesEn(text) {
-  const t = normalizeText(text);
-  const matches = t.match(/(?:my name is|his name is|her name is|this person is)\s+([A-Za-z][A-Za-z\s'-]{1,40})/gi);
-  if (!matches) return [];
-  const out = [];
-  for (const m of matches) {
-    const name = m.replace(/^(my name is|his name is|her name is|this person is)\s+/i, "").trim();
-    if (name && name.length >= 2) out.push(name);
-  }
-  return Array.from(new Set(out));
-}
-
-function extractDecision(text, lang) {
+function extractDecisionSignal(text, lang) {
   const t = normalizeText(text);
   if (!t) return null;
+
+  let detected = false;
 
   if (lang === "ar") {
-    const decisionMarkers = ["قررت", "محتار", "متردد", "مش عارف أقرر", "مش عارف اقرر", "اختار", "أسيب", "اسيب", "أكمل", "اكمل", "أوافق", "اوافق"];
-    if (!hasAny(t, decisionMarkers)) return null;
-    return {
-      type: "Decision",
-      summary: t.length > 140 ? t.slice(0, 140).trim() : t
-    };
+    detected = hasAny(t, [
+      "قررت",
+      "محتار",
+      "متردد",
+      "مش عارف أقرر",
+      "مش عارف اقرر",
+      "اختار",
+      "أسيب",
+      "اسيب",
+      "أكمل",
+      "اكمل",
+      "أوافق",
+      "اوافق"
+    ]);
   } else {
-    const decisionMarkers = ["i decided", "i'm deciding", "can't decide", "choose", "should i", "stay or", "quit", "leave", "continue"];
-    if (!hasAny(t, decisionMarkers)) return null;
-    return {
-      type: "Decision",
-      summary: t.length > 160 ? t.slice(0, 160).trim() : t
-    };
-  }
-}
-
-function extractConstraint(text, lang) {
-  const t = normalizeText(text);
-  if (!t) return null;
-
-  if (lang === "ar") {
-    const markers = ["بس", "لكن", "عشان", "علشان", "بسبب", "مشكلة", "عائق", "مش قادر", "مش قادره", "مش عارف", "خايف", "قلقان"];
-    if (!hasAny(t, markers)) return null;
-    return {
-      type: "Constraint",
-      summary: t.length > 140 ? t.slice(0, 140).trim() : t
-    };
-  } else {
-    const markers = ["but", "because", "due to", "problem", "issue", "can't", "cannot", "afraid", "worried", "anxious"];
-    if (!hasAny(t.toLowerCase(), markers)) return null;
-    return {
-      type: "Constraint",
-      summary: t.length > 160 ? t.slice(0, 160).trim() : t
-    };
-  }
-}
-
-function extractThread(text, contextHalo, lang) {
-  const t = normalizeText(text);
-  if (!t) return null;
-
-  if (contextHalo === "decision") {
-    return {
-      type: "Thread",
-      summary: lang === "ar" ? "قرار قيد التفكير" : "Decision in progress"
-    };
+    detected = hasAny(t, [
+      "i decided",
+      "i'm deciding",
+      "can't decide",
+      "choose",
+      "should i",
+      "stay or",
+      "quit",
+      "leave",
+      "continue"
+    ]);
   }
 
-  if (contextHalo === "emotional_discomfort") {
-    return {
-      type: "Thread",
-      summary: lang === "ar" ? "ضغط/ثِقل نفسي اليوم" : "Stress/weight today"
-    };
-  }
+  if (!detected) return null;
 
-  const generic = t.length > 60 ? t.slice(0, 60).trim() : t;
   return {
-    type: "Thread",
-    summary: lang === "ar" ? `موضوع: ${generic}` : `Topic: ${generic}`
+    type: "signal",
+    category: "decision_making",
+    signal_code: "DECISION_MARKER"
   };
 }
 
-function buildObject(base, lang, extras) {
-  const obj = {
-    id: `mo_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-    type: base.type,
-    summary: base.summary,
-    ts: nowISO(),
-    tags: [],
-    links: []
+function extractConstraintSignal(text, lang) {
+  const t = normalizeText(text);
+  if (!t) return null;
+
+  let detected = false;
+
+  if (lang === "ar") {
+    detected = hasAny(t, [
+      "بس",
+      "لكن",
+      "عشان",
+      "علشان",
+      "بسبب",
+      "مشكلة",
+      "عائق",
+      "مش قادر",
+      "مش قادره",
+      "مش عارف",
+      "خايف",
+      "قلقان"
+    ]);
+  } else {
+    detected = hasAny(t, [
+      "but",
+      "because",
+      "due to",
+      "problem",
+      "issue",
+      "can't",
+      "cannot",
+      "afraid",
+      "worried",
+      "anxious"
+    ]);
+  }
+
+  if (!detected) return null;
+
+  return {
+    type: "signal",
+    category: "constraint",
+    signal_code: "CONSTRAINT_MARKER"
+  };
+}
+
+function extractContextSignal(contextHalo) {
+  if (!contextHalo) return null;
+
+  return {
+    type: "context_log",
+    category: contextHalo,
+    signal_code: "CONTEXT_CLASSIFIED"
+  };
+}
+
+function extractTopicSignal(text, lang) {
+  const t = normalizeText(text);
+  if (!t) return null;
+
+  const topics = {
+    work: {
+      ar: ["شغل", "عمل", "مدير", "تاسك", "مشروع", "شركة", "كارير", "وظيفة", "استقالة", "زميل"],
+      en: ["work", "job", "career", "boss", "task", "project", "company", "resign", "colleague"]
+    },
+    relationships: {
+      ar: ["علاقة", "شريكي", "خطيب", "زوج", "صاحب", "أهلي", "بيت", "مشاعر", "حب", "فراق"],
+      en: ["relationship", "partner", "spouse", "friend", "family", "feeling", "love", "breakup"]
+    },
+    self: {
+      ar: ["نفسي", "تطوير", "جيم", "صحة", "نوم", "اكتئاب", "قلق", "تركيز", "عادة"],
+      en: ["myself", "self", "gym", "health", "sleep", "depression", "anxiety", "focus", "habit"]
+    }
   };
 
-  if (extras && Array.isArray(extras.tags)) obj.tags = extras.tags;
-  if (extras && Array.isArray(extras.links)) obj.links = extras.links;
+  const target = lang === "ar" ? "ar" : "en";
 
-  if (lang === "ar") obj.tags = Array.from(new Set(obj.tags.concat(["ar"])));
-  else obj.tags = Array.from(new Set(obj.tags.concat(["en"])));
+  if (hasAny(t, topics.work[target])) {
+    return { type: "signal", category: "topic", signal_code: "TOPIC_WORK" };
+  }
 
-  return obj;
+  if (hasAny(t, topics.relationships[target])) {
+    return { type: "signal", category: "topic", signal_code: "TOPIC_RELATIONSHIPS" };
+  }
+
+  if (hasAny(t, topics.self[target])) {
+    return { type: "signal", category: "topic", signal_code: "TOPIC_SELF" };
+  }
+
+  return null;
+}
+
+function buildObject(base, lang, tags) {
+  return {
+    id: `mem_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    type: base.type,
+    category: base.category || "general",
+    signal_code: base.signal_code,
+    ts: nowISO(),
+    tags: Array.from(new Set([...(Array.isArray(tags) ? tags : []), lang]))
+  };
 }
 
 function extractMemoryObjects(payload) {
@@ -134,34 +170,36 @@ function extractMemoryObjects(payload) {
   const contextHalo = normalizeText(payload && payload.contextHalo) || "general";
   const lang = normalizeText(payload && payload.language) || detectLanguageHeuristic(message);
 
-  if (!message) return { objects: [], extracted: false };
+  if (!message) {
+    return { objects: [], extracted: false };
+  }
 
   const objects = [];
-  const thread = extractThread(message, contextHalo, lang);
-  if (thread) objects.push(buildObject(thread, lang, { tags: ["thread"] }));
 
-  const decision = extractDecision(message, lang);
-  if (decision) objects.push(buildObject(decision, lang, { tags: ["decision"], links: thread ? [objects[0].id] : [] }));
-
-  const constraint = extractConstraint(message, lang);
-  if (constraint) objects.push(buildObject(constraint, lang, { tags: ["constraint"], links: objects.length ? [objects[0].id] : [] }));
-
-  const persons = lang === "ar" ? extractPersonCandidatesAr(message) : extractPersonCandidatesEn(message);
-  for (const p of persons) {
-    objects.push(buildObject({ type: "Person", summary: p }, lang, { tags: ["person"] }));
+  const contextSignal = extractContextSignal(contextHalo);
+  if (contextSignal) {
+    objects.push(buildObject(contextSignal, lang, ["context"]));
   }
 
-  const unique = [];
-  const seen = new Set();
-  for (const o of objects) {
-    const key = `${o.type}::${o.summary}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(o);
-    }
+  const topicSignal = extractTopicSignal(message, lang);
+  if (topicSignal) {
+    objects.push(buildObject(topicSignal, lang, ["topic_signal"]));
   }
 
-  return { objects: unique, extracted: unique.length > 0 };
+  const decisionSignal = extractDecisionSignal(message, lang);
+  if (decisionSignal) {
+    objects.push(buildObject(decisionSignal, lang, ["behavior_signal"]));
+  }
+
+  const constraintSignal = extractConstraintSignal(message, lang);
+  if (constraintSignal) {
+    objects.push(buildObject(constraintSignal, lang, ["behavior_signal"]));
+  }
+
+  return {
+    objects,
+    extracted: objects.length > 0
+  };
 }
 
 module.exports = {
