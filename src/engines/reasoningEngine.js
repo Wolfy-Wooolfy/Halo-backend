@@ -101,11 +101,24 @@ function extractHaloLinesFromLLMText(text) {
   };
 }
 
-function buildFallbackResponse(options) {
-  const language = options && options.language ? String(options.language) : "en";
-  const context = options && options.context ? String(options.context) : "general";
+function normalizeLanguageFamily(language) {
+  const v = String(language || "").toLowerCase().trim();
+  if (!v) return "en";
+  if (v === "ar") return "ar";
+  if (v.startsWith("ar-")) return "ar";
+  if (v.includes("arabic")) return "ar";
+  if (v === "en") return "en";
+  if (v.startsWith("en-")) return "en";
+  if (v.includes("english")) return "en";
+  return "en";
+}
 
-  if (language === "ar") {
+function buildFallbackResponse(options) {
+const languageRaw = options && options.language ? String(options.language) : "en";
+const languageFamily = normalizeLanguageFamily(languageRaw);
+const context = options && options.context ? String(options.context) : "general";
+
+if (languageFamily === "ar") {
     if (context === "emotional_discomfort") {
       return {
         reflection: "حاسس إن اللحظة دي تقيلة عليك شوية.",

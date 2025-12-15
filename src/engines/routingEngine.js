@@ -29,9 +29,86 @@ function hasAny(text, arr) {
   return arr.some((k) => t.includes(String(k).toLowerCase()));
 }
 
+function isArabicFamily(language) {
+  const lang = String(language || "").toLowerCase();
+  if (!lang) return false;
+  if (lang === "ar") return true;
+  if (lang.startsWith("ar-")) return true;
+  if (lang.startsWith("arabic")) return true;
+  if (lang.includes("arabic")) return true;
+  if (lang.includes("ar")) return true;
+  return false;
+}
+
+function isEnglishFamily(language) {
+  const lang = String(language || "").toLowerCase();
+  if (!lang) return false;
+  if (lang === "en") return true;
+  if (lang.startsWith("en-")) return true;
+  if (lang.startsWith("english")) return true;
+  if (lang.includes("english")) return true;
+  if (lang.includes("en")) return true;
+  return false;
+}
+
+function isQuestionMessage(message, language) {
+  const t = normalizeText(message);
+  if (!t) return false;
+
+  if (t.includes("?") || t.includes("؟")) return true;
+
+  const arStarters = [
+    "ايه",
+    "إيه",
+    "ليه",
+    "لِيه",
+    "ازاي",
+    "إزاي",
+    "امتى",
+    "إمتى",
+    "فين",
+    "مين",
+    "هل",
+    "شو",
+    "ليش",
+    "وين",
+    "قديش",
+    "متى",
+    "كيف",
+    "لماذا"
+  ];
+
+  const enStarters = [
+    "what",
+    "why",
+    "how",
+    "when",
+    "where",
+    "who",
+    "which",
+    "can you",
+    "could you",
+    "should i",
+    "do i",
+    "is it",
+    "are you"
+  ];
+
+  const lower = t.toLowerCase();
+
+  if (isArabicFamily(language)) {
+    return arStarters.some((w) => t.startsWith(w));
+  }
+
+  if (isEnglishFamily(language)) {
+    return enStarters.some((w) => lower.startsWith(w));
+  }
+
+  return false;
+}
+
 function hasHesitationOrStressMarkers(message, language) {
   const t = normalizeText(message);
-  const lang = String(language || "").toLowerCase();
 
   const arMarkers = [
     "متوتر",
@@ -73,13 +150,12 @@ function hasHesitationOrStressMarkers(message, language) {
     "affecting my work"
   ];
 
-  if (lang === "ar" || lang === "arabic") return hasAny(t, arMarkers);
+  if (isArabicFamily(language)) return hasAny(t, arMarkers);
   return hasAny(t, enMarkers);
 }
 
 function hasTopicMarkers(message, language) {
   const t = normalizeText(message);
-  const lang = String(language || "").toLowerCase();
 
   const workAr = ["شغل", "عمل", "وظيفة", "شركة", "مدير", "مشروع", "تاسك", "كارير", "مأثر على شغلي", "ماثر على شغلي"];
   const relAr = ["زوج", "مراتي", "علاقة", "خطيب", "خطيبة", "أهلي", "صاحب", "صديقة", "فراق", "مشاعر", "بيت"];
@@ -89,7 +165,7 @@ function hasTopicMarkers(message, language) {
   const relEn = ["relationship", "partner", "spouse", "family", "friend", "breakup", "love"];
   const selfEn = ["sleep", "health", "focus", "habit", "anxiety", "stress", "depression"];
 
-  if (lang === "ar" || lang === "arabic") {
+  if (isArabicFamily(language)) {
     return hasAny(t, workAr) || hasAny(t, relAr) || hasAny(t, selfAr);
   }
 
@@ -150,6 +226,7 @@ function decideRoute(options) {
   } else {
     const markerStress = hasHesitationOrStressMarkers(message, language);
     const markerTopic = hasTopicMarkers(message, language);
+    const isQuestion = isQuestionMessage(message, language);
 
     if ((markerStress || markerTopic) && messageLength >= 20) {
       mode = "balanced";
@@ -157,12 +234,12 @@ function decideRoute(options) {
       maxTokens = 120;
       temperature = 0.4;
       reason = "markers_detected (stress/topic) → balanced LLM even if message is short";
-    } else if (messageLength > 0 && messageLength <= 30) {
+    } else if (messageLength > 0 && messageLength <= 30 && !isQuestion) {
       mode = "fast";
       useLLM = false;
       maxTokens = 60;
       temperature = 0.3;
-      reason = "very_short_general_message → fast mode without LLM";
+      reason = "very_short_general_message (no question) → fast mode without LLM";
     } else if (messageLength > 200) {
       mode = "balanced";
       useLLM = true;
@@ -174,7 +251,7 @@ function decideRoute(options) {
       useLLM = true;
       maxTokens = 120;
       temperature = 0.4;
-      reason = "general_message → balanced LLM";
+      reason = isQuestion ? "short_question → balanced LLM" : "general_message → balanced LLM";
     }
   }
 
