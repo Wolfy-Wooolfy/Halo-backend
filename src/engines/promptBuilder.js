@@ -1,23 +1,104 @@
 const { getUserMemorySnapshot } = require("../engines/memoryEngine");
 
-function normalizeLanguage(language) {
-  if (!language) return "en";
-  const value = String(language).toLowerCase();
-  if (value === "arabic" || value === "ar" || value === "arabic-eg") return "ar";
-  return "en";
+function normalizeText(s) {
+  return String(s || "").trim();
+}
+
+function parseLanguageVariant(language) {
+  const raw = normalizeText(language).toLowerCase();
+  if (!raw) {
+    return { base: "en", variant: "en", raw: "en" };
+  }
+
+  if (raw === "ar" || raw.startsWith("arabic")) {
+    const variant = raw === "ar" || raw === "arabic" ? "arabic" : raw;
+    return { base: "ar", variant, raw };
+  }
+
+  if (raw === "en" || raw.startsWith("english")) {
+    const variant = raw === "en" || raw === "english" ? "english" : raw;
+    return { base: "en", variant, raw };
+  }
+
+  if (raw.includes("-")) {
+    const base = raw.split("-")[0];
+    return { base, variant: raw, raw };
+  }
+
+  return { base: raw, variant: raw, raw };
+}
+
+function isArabicBase(language) {
+  const info = parseLanguageVariant(language);
+  if (info.base === "ar") return true;
+  if (info.variant.startsWith("arabic")) return true;
+  if (info.raw === "ar") return true;
+  return false;
+}
+
+function buildDialectStyleInstruction(languageVariant) {
+  const v = normalizeText(languageVariant).toLowerCase();
+  if (!v) {
+    return "Match the user's language and dialect exactly as they write.";
+  }
+
+  const isArabic = v === "ar" || v.startsWith("arabic") || v.startsWith("ar-");
+  const isEnglish = v === "en" || v.startsWith("english") || v.startsWith("en-");
+
+  if (isArabic) {
+    if (v.includes("eg") || v.includes("egypt")) {
+      return "اكتب باللهجة المصرية وبنفس أسلوب المستخدم (مش فصحى).";
+    }
+    if (v.includes("gulf") || v.includes("sa") || v.includes("ksa") || v.includes("uae") || v.includes("kw") || v.includes("qa") || v.includes("bh") || v.includes("om")) {
+      return "اكتب باللهجة الخليجية (السعودية/الخليج) وبنفس أسلوب المستخدم (مش فصحى).";
+    }
+    if (v.includes("levant") || v.includes("sy") || v.includes("lb") || v.includes("jo") || v.includes("ps")) {
+      return "اكتب باللهجة الشامية (سوري/لبناني/أردني/فلسطيني) وبنفس أسلوب المستخدم (مش فصحى).";
+    }
+    if (v.includes("ma") || v.includes("dz") || v.includes("tn") || v.includes("ly") || v.includes("maghreb") || v.includes("morocco") || v.includes("algeria") || v.includes("tunisia") || v.includes("libya")) {
+      return "اكتب باللهجة المغاربية/شمال أفريقيا حسب بلد المستخدم وبنفس أسلوبه (مش فصحى).";
+    }
+    if (v.includes("msa") || v.includes("modern") || v.includes("standard") || v.includes("fusha")) {
+      return "اكتب بالعربية الفصحى المبسطة فقط.";
+    }
+    return "اكتب بنفس لهجة المستخدم العربية كما يكتبها، وتجنب الفصحى إلا لو المستخدم كتب فصحى.";
+  }
+
+  if (isEnglish) {
+    if (v.includes("us") || v.includes("american")) {
+      return "Write in natural American English matching the user's tone and dialect.";
+    }
+    if (v.includes("uk") || v.includes("british")) {
+      return "Write in natural British English matching the user's tone and dialect.";
+    }
+    if (v.includes("in") || v.includes("india") || v.includes("indian")) {
+      return "Write in natural Indian English matching the user's tone and dialect.";
+    }
+    if (v.includes("ca") || v.includes("canada") || v.includes("canadian")) {
+      return "Write in natural Canadian English matching the user's tone and dialect.";
+    }
+    if (v.includes("af") || v.includes("africa") || v.includes("nigeria") || v.includes("kenya") || v.includes("south-africa")) {
+      return "Write in natural African English matching the user's tone and dialect.";
+    }
+    return "Write in the same English dialect and style the user is using.";
+  }
+
+  return "Match the user's language and dialect exactly as they write, including regional style and wording.";
 }
 
 function buildSystemDirective(language) {
-  const isArabic = normalizeLanguage(language) === "ar";
+  const isArabic = isArabicBase(language);
+  const langInfo = parseLanguageVariant(language);
+  const style = buildDialectStyleInstruction(langInfo.variant);
+
   if (isArabic) {
     return [
       "انت HALO، طبقة عقل خارجية هدفها تخفيف الحمل الذهني عن المستخدم.",
       "لست معالجًا نفسيًا، ولا كوتش، ولا صديقًا، ولا مستشارًا.",
-      "دورك هو فهم ما يقوله المستخدم بأقل قدر ممكن من التفاصيل،",
-      "وتقليل الضغط عليه، وتقديم خطوة صغيرة واحدة فقط تساعده يتحرك للأمام.",
+      "دورك هو فهم ما يقوله المستخدم بأقل قدر ممكن من التفاصيل، وتقديم خطوة صغيرة واحدة فقط تساعده يتحرك للأمام.",
       "حافظ دائمًا على نبرة هادئة، مختصرة، ثابتة، داعمة، ومحايدة.",
-      "لا تفسر طفولة، ولا تشخص اضطرابات نفسية، ولا تحلل ماضي المستخدم.",
-      "لا تستخدم لغة علاجية أو نفسية أو عبارات تشخيص."
+      "لا تفسر طفولة، ولا تشخص اضطرابات نفسية، ولا تحلل ماضي المستخدم، ولا تستخدم لغة علاجية أو تشخيص.",
+      style
     ].join(" ");
   }
 
@@ -26,19 +107,21 @@ function buildSystemDirective(language) {
     "You are not a therapist, not a coach, not a friend, and not a problem-solver.",
     "Your role is to understand the user with minimal input, reduce pressure, and provide one small step forward.",
     "Keep your tone calm, concise, steady, supportive, and neutral.",
-    "Do not interpret trauma, do not diagnose, and do not use therapeutic language or psychological analysis."
+    "Do not interpret trauma, do not diagnose, and do not use therapeutic language or psychological analysis.",
+    style
   ].join(" ");
 }
 
 function buildBehaviorLayer(language) {
-  const isArabic = normalizeLanguage(language) === "ar";
+  const isArabic = isArabicBase(language);
+
   if (isArabic) {
     return [
       "قواعد السلوك:",
       "الرد دائمًا يكون في صورة ثلاث مكوّنات فقط: انعكاس قصير، سؤال توضيحي واحد، وخطوة صغيرة جدًا.",
       "كل مكوّن يكون في جملة قصيرة واحدة فقط.",
-      "لا تكتب فقرات طويلة، ولا خطط متعددة الخطوات، ولا نصائح مطولة.",
-      "لا تشرح أسباب المشاعر، ولا تحاول إصلاح حياة المستخدم، فقط خطوة صغيرة واحدة."
+      "ممنوع فقرات طويلة أو خطط متعددة الخطوات أو نصائح مطولة.",
+      "لا تشرح أسباب المشاعر ولا تحاول إصلاح حياة المستخدم، فقط خطوة صغيرة واحدة."
     ].join(" ");
   }
 
@@ -52,9 +135,8 @@ function buildBehaviorLayer(language) {
 }
 
 function buildSafetyLayer(safety, context, language) {
-  const isArabic = normalizeLanguage(language) === "ar";
+  const isArabic = isArabicBase(language);
   const flag = safety && safety.flag ? safety.flag : "none";
-  const category = safety && safety.category ? safety.category : "";
   const isHighRisk = safety && safety.isHighRisk;
 
   if (isArabic) {
@@ -62,9 +144,9 @@ function buildSafetyLayer(safety, context, language) {
       return [
         "وضع الأمان:",
         "اعتبر أن المستخدم في حالة حساسة أو خطرة.",
-        "قلل العمق تمامًا، تجنب أي نصائح، ولا تقترح قرارات كبيرة.",
+        "قلل العمق تمامًا، تجنب أي نصائح أو قرارات كبيرة.",
         "استخدم انعكاس بسيط، سؤال توضيحي خفيف، وخطوة تهدئة أو تنظيم بسيطة فقط.",
-        "لا تذكر أدوية، ولا تشخيصات، ولا إحالات طبية مباشرة، فقط شجع المستخدم على طلب مساعدة من شخص موثوق أو مختص إذا لزم الأمر."
+        "لا تذكر أدوية أو تشخيصات أو تعليمات طبية."
       ].join(" ");
     }
 
@@ -73,14 +155,14 @@ function buildSafetyLayer(safety, context, language) {
         "وضع الأمان:",
         "اعتبر أن المستخدم تحت ضغط أو توتر مرتفع.",
         "حافظ على رد مختصر جدًا، هادئ، ومطمئن.",
-        "تجنب القرارات الكبيرة أو الأسئلة المعقدة، وركز على خطوة صغيرة سهلة التنفيذ أو تهدئة بسيطة."
+        "تجنب القرارات الكبيرة أو الأسئلة المعقدة، وركز على خطوة صغيرة سهلة."
       ].join(" ");
     }
 
     return [
       "وضع الأمان:",
       "لا توجد إشارات خطورة عالية في الرسالة.",
-      "حافظ رغم ذلك على بساطة الرد، وتجنب الكلام العميق أو الحساس."
+      "حافظ على بساطة الرد وتجنب الكلام العميق أو الحساس."
     ].join(" ");
   }
 
@@ -90,7 +172,7 @@ function buildSafetyLayer(safety, context, language) {
       "Assume the user may be in a sensitive or high-risk emotional state.",
       "Reduce depth, avoid giving advice or big decisions, and keep the reply very light.",
       "Use one reflection, one gentle question, and one grounding micro-step only.",
-      "Do not mention medication, diagnoses, or medical instructions. Encourage the user to seek help from a trusted person or professional if needed."
+      "Do not mention medication, diagnoses, or medical instructions."
     ].join(" ");
   }
 
@@ -111,62 +193,44 @@ function buildSafetyLayer(safety, context, language) {
 }
 
 function buildMemorySummaryFromSnapshot(memory, language) {
-  const isArabic = normalizeLanguage(language) === "ar";
+  const isArabic = isArabicBase(language);
 
   if (!memory) {
     if (isArabic) {
-      return "لا توجد ذاكرة سابقة متاحة تقريبًا. اعتبر أن هذه واحدة من أولى المحادثات مع المستخدم، فحافظ على بساطة شديدة وعدم افتراض أي تاريخ أو تفاصيل عن حياته.";
+      return "لا توجد ذاكرة سابقة متاحة تقريبًا. اعتبر أن هذه من أولى المحادثات مع المستخدم، ولا تفترض تفاصيل أو تاريخ.";
     }
-    return "Very little previous memory is available. Treat this as one of the first interactions with the user; do not assume any detailed history or personal story.";
+    return "Very little previous memory is available. Treat this as one of the first interactions; do not assume any detailed history.";
   }
 
   const parts = [];
-
-  const lastTopic = memory.lastTopic || memory.last_topic || "";
-  const lastContext = memory.lastContext || memory.last_context || "";
-  const hesitation = !!(memory.hesitationSignal || memory.hesitation_signal);
-
-  const signalCodes = Array.isArray(memory.lastSignalCodes)
-    ? memory.lastSignalCodes
-    : Array.isArray(memory.last_signal_codes)
-      ? memory.last_signal_codes
-      : [];
-
-  const moodHistory = Array.isArray(memory.moodHistory) ? memory.moodHistory : [];
-  const moodTrend = moodHistory
-    .slice(-7)
-    .map((x) => (x && x.mood ? String(x.mood) : ""))
-    .filter(Boolean);
+  const lastTopic = memory.last_topic || memory.lastTopic;
+  const lastEmotion = memory.last_emotion_label || memory.lastEmotionLabel;
+  const energy = memory.energy_level || memory.energyLevel;
+  const engagement = memory.engagement_style || memory.engagementStyle;
+  const moodTrend = memory.mood_7_days || memory.mood7days || memory.mood_history;
 
   if (isArabic) {
-    if (lastTopic) parts.push("آخر موضوع (إشارة عامة): " + String(lastTopic));
-    if (lastContext) parts.push("آخر سياق عام: " + String(lastContext));
-    if (hesitation) parts.push("إشارة تردد/ضغط: موجودة");
-    if (signalCodes.length) parts.push("أكواد إشارات حديثة: " + signalCodes.slice(0, 10).join(", "));
-    if (moodTrend.length) parts.push("توجه المزاج (مبسط): " + moodTrend.join(" → "));
-
-    if (parts.length === 0) {
-      return "الذاكرة الحالية خفيفة جدًا ولا تحتوي على تفاصيل كثيرة. تعامل مع المستخدم كأنه يبدأ صفحة جديدة، وركز على الحاضر فقط.";
-    }
-
+    if (lastTopic) parts.push("آخر موضوع ظاهر في الذاكرة: " + String(lastTopic));
+    if (lastEmotion) parts.push("آخر حالة شعورية مسجلة: " + String(lastEmotion));
+    if (energy) parts.push("مستوى الطاقة التقريبي: " + String(energy));
+    if (engagement) parts.push("أسلوب التفاعل الغالب: " + String(engagement));
+    if (Array.isArray(moodTrend) && moodTrend.length > 0) parts.push("توجه المزاج السابق (مبسط): " + moodTrend.join(", "));
+    if (parts.length === 0) return "الذاكرة الحالية خفيفة جدًا. ركز على الحاضر فقط بدون افتراضات.";
     return "ملخص سياق المستخدم (من الذاكرة الميتاداتية):\n- " + parts.join("\n- ");
   }
 
-  if (lastTopic) parts.push("Last topic (signal): " + String(lastTopic));
-  if (lastContext) parts.push("Last context: " + String(lastContext));
-  if (hesitation) parts.push("Hesitation/stress signal: present");
-  if (signalCodes.length) parts.push("Recent signal codes: " + signalCodes.slice(0, 10).join(", "));
-  if (moodTrend.length) parts.push("Recent mood trend (simplified): " + moodTrend.join(" → "));
-
-  if (parts.length === 0) {
-    return "Current memory is very light. Treat the user as if they are starting fresh today and focus on this moment only.";
-  }
-
+  if (lastTopic) parts.push("Last topic: " + String(lastTopic));
+  if (lastEmotion) parts.push("Last emotion label: " + String(lastEmotion));
+  if (energy) parts.push("Approximate energy level: " + String(energy));
+  if (engagement) parts.push("Interaction style: " + String(engagement));
+  if (Array.isArray(moodTrend) && moodTrend.length > 0) parts.push("Recent mood trend (simplified): " + moodTrend.join(", "));
+  if (parts.length === 0) return "Current memory is very light. Focus on the present moment only.";
   return "User context summary (from metadata-only memory):\n- " + parts.join("\n- ");
 }
 
-function buildTaskSection(message, language) {
-  const isArabic = normalizeLanguage(language) === "ar";
+function buildTaskSection(language) {
+  const isArabic = isArabicBase(language);
+
   if (isArabic) {
     return [
       "المهمة:",
@@ -174,7 +238,7 @@ function buildTaskSection(message, language) {
       "بعد ذلك، لا تكتب ردًا نصيًا عاديًا، ولكن أرجِع ناتجًا في صورة كائن JSON فقط.",
       "هذا الـ JSON يجب أن يحتوي بالضبط على ثلاثة مفاتيح نصية:",
       "reflection, question, micro_step",
-      "كل مفتاح يحتوي على جملة قصيرة واحدة فقط باللغة العربية."
+      "كل مفتاح يحتوي على جملة قصيرة واحدة فقط بنفس لهجة المستخدم."
     ].join(" ");
   }
 
@@ -184,39 +248,36 @@ function buildTaskSection(message, language) {
     "Then do NOT write a normal textual reply. Instead, return a JSON object only.",
     "This JSON must contain exactly three string fields:",
     "reflection, question, micro_step",
-    "Each field must be a single short sentence in the appropriate language."
+    "Each field must be one short sentence in the same dialect/style the user is using."
   ].join(" ");
 }
 
 function buildOutputFormatSection(language) {
-  const isArabic = normalizeLanguage(language) === "ar";
+  const isArabic = isArabicBase(language);
+
   if (isArabic) {
     return [
       "تنسيق المخرج:",
       "أرجِع كائن JSON واحد فقط بدون أي نص قبلَه أو بعدَه.",
-      "يجب أن يكون بالشكل التالي (مثال توضيحي، مع استبدال القيم الفعلية):",
       '{ "reflection": "جملة واحدة قصيرة تعكس ما قاله المستخدم.", "question": "سؤال توضيحي واحد قصير.", "micro_step": "خطوة صغيرة جدًا يمكن تنفيذها الآن." }',
-      "ممنوع إضافة أي مفاتيح أخرى غير reflection و question و micro_step.",
+      "ممنوع إضافة أي مفاتيح أخرى.",
       "ممنوع إضافة أي نص خارج كائن الـ JSON."
     ].join(" ");
   }
 
   return [
     "Output format:",
-    "You must return a single JSON object only, with no text before or after it.",
-    "The structure must be exactly like this (with appropriate actual values):",
+    "Return a single JSON object only, with no text before or after it.",
     '{ "reflection": "One short sentence reflecting the user.", "question": "One short clarifying question.", "micro_step": "One very small step the user can take now." }',
-    "Do not add any other keys besides reflection, question, and micro_step.",
+    "Do not add any other keys.",
     "Do not add any text outside the JSON object."
   ].join(" ");
 }
 
 function buildUserMessageBlock(message, language) {
   const safeMessage = typeof message === "string" ? message : "";
-  const isArabic = normalizeLanguage(language) === "ar";
-  if (isArabic) {
-    return 'رسالة المستخدم الأصلية:\n"' + safeMessage + '"';
-  }
+  const isArabic = isArabicBase(language);
+  if (isArabic) return 'رسالة المستخدم الأصلية:\n"' + safeMessage + '"';
   return 'User message:\n"' + safeMessage + '"';
 }
 
@@ -241,7 +302,7 @@ function buildHaloPrompt(options) {
   const behaviorLayer = buildBehaviorLayer(language);
   const safetyLayer = buildSafetyLayer(safety, context, language);
   const memorySummary = buildMemorySummaryFromSnapshot(memorySnapshot, language);
-  const taskSection = buildTaskSection(message, language);
+  const taskSection = buildTaskSection(language);
   const outputFormatSection = buildOutputFormatSection(language);
   const userBlock = buildUserMessageBlock(message, language);
 
