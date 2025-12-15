@@ -11,6 +11,66 @@ function buildPreview(text) {
   return t.length > 80 ? t.slice(0, 80) : t;
 }
 
+function stripCodeFences(text) {
+  const t = normalizeText(text);
+  if (!t) return "";
+  return t
+    .replace(/^```json/i, "")
+    .replace(/^```/i, "")
+    .replace(/```$/i, "")
+    .trim();
+}
+
+function extractFirstJsonObject(text) {
+  const t = normalizeText(text);
+  if (!t) return null;
+
+  const start = t.indexOf("{");
+  const end = t.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+
+  const candidate = t.slice(start, end + 1).trim();
+  if (!candidate.startsWith("{") || !candidate.endsWith("}")) return null;
+
+  return candidate;
+}
+
+function safeParseJson(text) {
+  const cleaned = stripCodeFences(text);
+  if (!cleaned) return null;
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    const extracted = extractFirstJsonObject(cleaned);
+    if (!extracted) return null;
+    try {
+      return JSON.parse(extracted);
+    } catch (e2) {
+      return null;
+    }
+  }
+}
+
+function coerceHaloJson(obj) {
+  if (!obj || typeof obj !== "object") return null;
+
+  const reflection = normalizeText(obj.reflection);
+  const question = normalizeText(obj.question);
+  const micro =
+    normalizeText(obj.micro_step) ||
+    normalizeText(obj.microStep) ||
+    normalizeText(obj.microstep);
+
+  if (!reflection || !question) return null;
+
+  return {
+    reflection,
+    question,
+    micro_step: micro || ""
+  };
+}
+
 function extractHaloLinesFromLLMText(text) {
   if (!text || typeof text !== "string") {
     return null;
@@ -222,7 +282,7 @@ async function generateResponse(options) {
       if (typeof llmResult.output === "string") {
         text = llmResult.output;
       } else if (typeof llmResult.output === "object") {
-        parsed = {
+        parsed = coerceHaloJson(llmResult.output) || {
           reflection: llmResult.output.reflection || "",
           question: llmResult.output.question || "",
           micro_step: llmResult.output.micro_step || llmResult.output.microStep || ""
@@ -246,6 +306,11 @@ async function generateResponse(options) {
       } else if (typeof raw.content === "string") {
         text = raw.content;
       }
+    }
+
+    if (!parsed && text) {
+      const jsonObj = safeParseJson(text);
+      parsed = coerceHaloJson(jsonObj);
     }
 
     if (!parsed && text) {
