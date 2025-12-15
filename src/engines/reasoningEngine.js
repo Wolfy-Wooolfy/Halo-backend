@@ -82,7 +82,7 @@ function extractHaloLinesFromLLMText(text) {
   }
 
   const parts = cleaned
-    .split(/[\.!\?؟]+/)
+    .split(/[\.!\?]+/)
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
 
@@ -113,40 +113,78 @@ function normalizeLanguageFamily(language) {
   return "en";
 }
 
-function buildFallbackResponse(options) {
-const languageRaw = options && options.language ? String(options.language) : "en";
-const languageFamily = normalizeLanguageFamily(languageRaw);
-const context = options && options.context ? String(options.context) : "general";
+function sanitizeEgyptianArabic(text) {
+  const t = normalizeText(text);
+  if (!t) return "";
 
-if (languageFamily === "ar") {
+  return t
+    .replace(/مضايقني/g, "مقلقني")
+    .replace(/مضايقاك/g, "مقلقك")
+    .replace(/مضايقك/g, "مقلقك")
+    .replace(/مضايقاكي/g, "مقلقك")
+    .replace(/مضايقكِ/g, "مقلقك")
+    .replace(/مضايقكم/g, "مقلقكم")
+    .replace(/مضايقاهم/g, "مقلقاهم")
+    .replace(/مضايقهم/g, "مقلقهم")
+    .replace(/مضايقاها/g, "مقلقاها")
+    .replace(/مضايقها/g, "مقلقها")
+    .replace(/مضايق/g, "مقلق");
+}
+
+function sanitizeHaloResponse(obj, language) {
+  if (!obj || typeof obj !== "object") return obj;
+
+  const languageFamily = normalizeLanguageFamily(language);
+
+  if (languageFamily !== "ar") {
+    return {
+      reflection: normalizeText(obj.reflection),
+      question: normalizeText(obj.question),
+      micro_step: normalizeText(obj.micro_step)
+    };
+  }
+
+  return {
+    reflection: sanitizeEgyptianArabic(obj.reflection),
+    question: sanitizeEgyptianArabic(obj.question),
+    micro_step: sanitizeEgyptianArabic(obj.micro_step)
+  };
+}
+
+function buildFallbackResponse(options) {
+  const languageRaw = options && options.language ? String(options.language) : "en";
+  const languageFamily = normalizeLanguageFamily(languageRaw);
+  const context = options && options.context ? String(options.context) : "general";
+
+  if (languageFamily === "ar") {
     if (context === "emotional_discomfort") {
       return {
         reflection: "حاسس إن اللحظة دي تقيلة عليك شوية.",
-        question: "ايه الجزء اللي مضايقك أكتر دلوقتي؟",
-        micro_step: "خد نفس بطيء واحد قبل ما تكتب ردك."
+        question: "إيه أكتر حاجة مقلقاك دلوقتي؟",
+        micro_step: "خد نفس بطيء واحد قبل ما ترد."
       };
     }
 
     if (context === "decision") {
       return {
         reflection: "واضح إن عندك قرار محتاج حسم.",
-        question: "ايه أكتر اختيارين واقفين قدامك دلوقتي؟",
+        question: "إيه أكتر اختيارين واقفين قدامك دلوقتي؟",
         micro_step: "اكتب بس اسم الاختيار الأقرب لقلبك."
       };
     }
 
     if (context === "general") {
       return {
-        reflection: "سامعك وبقرأ اللي بتحاول توصله.",
-        question: "تحب نركز على أنهي نقطة الأول؟",
-        micro_step: "اختار نقطة واحدة بس نبتدي منها."
+        reflection: "فاهمك.",
+        question: "تحب نبدأ بإيه الأول؟",
+        micro_step: "اختار نقطة واحدة بس ونبدأ بيها."
       };
     }
 
     return {
-      reflection: "فاهم إن الموضوع مش واضح بالكامل ليك.",
-      question: "ايه الحتة اللي حاسس إنها محتاجة توضيح؟",
-      micro_step: "جرّب تشرحها في جملة بسيطة."
+      reflection: "حاسس إن الصورة مش واضحة بالكامل.",
+      question: "إيه الجزئية اللي محتاجة توضيح أكتر؟",
+      micro_step: "قولها في جملة بسيطة."
     };
   }
 
@@ -221,10 +259,12 @@ async function generateResponse(options) {
   const lastReasoning = safeOptions.lastReasoning || null;
   const route = safeOptions.route || {};
 
-  const fallback = buildFallbackResponse({
+  const fallbackRaw = buildFallbackResponse({
     language,
     context
   });
+
+  const fallback = sanitizeHaloResponse(fallbackRaw, language);
 
   const llmAllowedByRoute = typeof route.useLLM === "boolean" ? route.useLLM : true;
   const llmAvailable = isConfigured();
@@ -344,10 +384,19 @@ async function generateResponse(options) {
       };
     }
 
+    const cleaned = sanitizeHaloResponse(
+      {
+        reflection: parsed.reflection,
+        question: parsed.question,
+        micro_step: parsed.micro_step
+      },
+      language
+    );
+
     return {
-      reflection: parsed.reflection,
-      question: parsed.question,
-      micro_step: parsed.micro_step,
+      reflection: cleaned.reflection,
+      question: cleaned.question,
+      micro_step: cleaned.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
       memory_update: buildMemoryUpdate({ message, context, safety, memory }),
       engine: llmResult.engine || {

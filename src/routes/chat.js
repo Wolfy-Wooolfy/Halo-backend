@@ -46,6 +46,8 @@ function getLanguageDetectorFn() {
     return languageDetector.detectLanguage;
   if (languageDetector && typeof languageDetector.detectLanguage === "function")
     return languageDetector.detectLanguage;
+  if (languageDetector && typeof languageDetector.detectLanguage === "function")
+    return languageDetector.detectLanguage;
 
   if (languageDetector && typeof languageDetector.detectLanguage === "function")
     return languageDetector.detectLanguage;
@@ -169,7 +171,8 @@ router.post("/chat", async (req, res) => {
     const safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
 
     const langCode = resolveLanguageCode(languageInfo);
-    const languageVariant = extractLanguageVariant(languageInfo);
+    const languageVariantRaw = extractLanguageVariant(languageInfo);
+    const languageVariant = langCode === "ar" ? "arabic-eg" : languageVariantRaw;
 
     const haloContext = mapContextForHalo(rawContextInfo.category);
     const previousMemory = getUserMemory(userId);
@@ -219,6 +222,7 @@ router.post("/chat", async (req, res) => {
       memory_update: halo.memory_update,
       meta: {
         language: languageInfo,
+        language_variant_used: languageVariant,
         context_raw: rawContextInfo,
         context_halo: haloContext,
         safety: safetyInfo
