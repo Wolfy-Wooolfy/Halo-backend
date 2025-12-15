@@ -2,110 +2,238 @@ function normalizeText(s) {
   return String(s || "").trim();
 }
 
-function hasAny(t, arr) {
-  const x = normalizeText(t).toLowerCase();
-  if (!x) return false;
-  return arr.some((k) => x.includes(String(k).toLowerCase()));
+function hasArabicChars(text) {
+  return /[\u0600-\u06FF]/.test(text);
 }
 
-function detectArabicDialect(text) {
-  const t = normalizeText(text);
+function hasLatinChars(text) {
+  return /[A-Za-z]/.test(text);
+}
 
-  const eg = [
-    "انا", "إحنا", "احنا", "مش", "ليه", "عايز", "عاوزه", "عاوز", "عايزه",
-    "عايزين", "عايزك", "بتاع", "بتاعة", "بتوعي", "دلوقتي", "لسه", "كده",
-    "ازاي", "إزاي", "فين", "عاوزين", "مفيش", "تمام", "حلو", "جامد", "خالص",
-    "أوي", "اوي", "بلاش", "هعمل", "هتعمل", "عاوز", "عايز", "مأثر", "ماثر"
-  ];
+function countMatches(text, patterns) {
+  let c = 0;
+  for (const p of patterns) {
+    if (p.test(text)) c += 1;
+  }
+  return c;
+}
 
-  const levant = [
-    "شو", "ليش", "هلأ", "هلق", "كتير", "كتير", "مو", "منيح", "تمام", "يعني",
-    "بدي", "بدّي", "بدك", "بدّك", "بدنا", "بدكن", "لك", "لكن", "مو هيك"
+function detectArabicVariant(t) {
+  const text = normalizeText(t).toLowerCase();
+  if (!text) return { language: "arabic", confidence: 0.6 };
+
+  const egypt = [
+    /\bبقالي\b/,
+    /\bمش\b/,
+    /\bعايز\b/,
+    /\bعاوزه\b/,
+    /\bليه\b/,
+    /\bازاي\b/,
+    /\bدلوقتي\b/,
+    /\bلسه\b/,
+    /\bكده\b/,
+    /\bبتاع\b/,
+    /\bجامد\b/,
+    /\bمفيش\b/,
+    /\bحاجة\b/,
+    /\bأوي\b/,
+    /\bاوي\b/,
+    /\bيعني\b/,
+    /\bعاوزين\b/,
+    /\bهعمل\b/,
+    /\bهنعمل\b/
   ];
 
   const gulf = [
-    "شلون", "وشلون", "شنو", "وشنو", "وين", "هالحين", "الحين", "ياخي", "ياخي",
-    "ترى", "ترى", "مايبغى", "ما أبي", "مابي", "أبي", "ابغى", "أبغى", "ودي",
-    "ودي", "تونا", "توه", "زود", "وايد"
+    /\bوش\b/,
+    /\bشلون\b/,
+    /\bزين\b/,
+    /\bمره\b/,
+    /\bمرّة\b/,
+    /\bالحين\b/,
+    /\bدحين\b/,
+    /\bابي\b/,
+    /\bأبي\b/,
+    /\bمو\b/,
+    /\bوشلون\b/,
+    /\bترى\b/,
+    /\bيا\s?ولد\b/,
+    /\bيا\s?رجال\b/
+  ];
+
+  const levant = [
+    /\bشو\b/,
+    /\bليش\b/,
+    /\bهلق\b/,
+    /\bهلأ\b/,
+    /\bلسّا\b/,
+    /\bلسه\b/,
+    /\bكتير\b/,
+    /\bكتير\b/,
+    /\bيعطيك\b/,
+    /\bتمام\b/,
+    /\bبدي\b/,
+    /\bبدو\b/,
+    /\bمو\s?هيك\b/,
+    /\bهيك\b/
+  ];
+
+  const maghreb = [
+    /\bبزاف\b/,
+    /\bواش\b/,
+    /\bشنو\b/,
+    /\bعلش\b/,
+    /\bعلاش\b/,
+    /\bدابا\b/,
+    /\bهاد\b/,
+    /\bغادي\b/,
+    /\bيا\s?خي\b/,
+    /\bخويا\b/
   ];
 
   const msa = [
-    "إنني", "إني", "أريد", "أرغب", "سوف", "لن", "قد", "حيث", "لذلك", "بالتالي",
-    "نظراً", "نظرًا", "بناءً", "بناء على", "أعتقد", "أظن", "من فضلك", "رجاءً"
+    /\bإن\b/,
+    /\bإنه\b/,
+    /\bلذلك\b/,
+    /\bبالنسبة\b/,
+    /\bيجب\b/,
+    /\bحيث\b/,
+    /\bسوف\b/,
+    /\bقد\b/,
+    /\bلكن\b/,
+    /\bلأن\b/,
+    /\bمن\s+أجل\b/
   ];
 
-  const score = {
-    eg: 0,
-    levant: 0,
-    gulf: 0,
-    msa: 0
-  };
+  const egScore = countMatches(text, egypt);
+  const gulfScore = countMatches(text, gulf);
+  const levScore = countMatches(text, levant);
+  const magScore = countMatches(text, maghreb);
+  const msaScore = countMatches(text, msa);
 
-  for (const k of eg) if (hasAny(t, [k])) score.eg += 1;
-  for (const k of levant) if (hasAny(t, [k])) score.levant += 1;
-  for (const k of gulf) if (hasAny(t, [k])) score.gulf += 1;
-  for (const k of msa) if (hasAny(t, [k])) score.msa += 1;
+  const scores = [
+    { lang: "arabic-eg", score: egScore },
+    { lang: "arabic-gulf", score: gulfScore },
+    { lang: "arabic-levant", score: levScore },
+    { lang: "arabic-maghreb", score: magScore },
+    { lang: "arabic-msa", score: msaScore }
+  ].sort((a, b) => b.score - a.score);
 
-  const entries = Object.entries(score).sort((a, b) => b[1] - a[1]);
-  const top = entries[0];
-  const topKey = top[0];
-  const topVal = top[1];
+  const top = scores[0];
 
-  if (topVal === 0) return { dialect: "arabic", confidence: 0.55 };
+  if (!top || top.score === 0) {
+    return { language: "arabic", confidence: 0.7 };
+  }
 
-  if (topKey === "eg") return { dialect: "arabic-eg", confidence: 0.9 };
-  if (topKey === "levant") return { dialect: "arabic-levant", confidence: 0.85 };
-  if (topKey === "gulf") return { dialect: "arabic-gulf", confidence: 0.85 };
-  if (topKey === "msa") return { dialect: "arabic-msa", confidence: 0.8 };
+  let conf = 0.75;
+  if (top.score >= 2) conf = 0.85;
+  if (top.score >= 3) conf = 0.9;
+  if (top.score >= 5) conf = 0.95;
 
-  return { dialect: "arabic", confidence: 0.6 };
+  return { language: top.lang, confidence: conf };
 }
 
-function detectEnglishVariant(text) {
-  const t = normalizeText(text).toLowerCase();
+function detectEnglishVariant(t) {
+  const text = normalizeText(t);
+  if (!text) return { language: "english", confidence: 0.6 };
 
-  const us = ["color", "favorite", "center", "organize", "analyze", "truck", "elevator"];
-  const uk = ["colour", "favourite", "centre", "organise", "analyse", "lorry", "lift"];
-  const india = ["kindly", "do the needful", "prepone", "revert back", "only", "itself"];
-  const africa = ["how far", "dash", "wahala", "gist"];
+  const lower = text.toLowerCase();
 
-  const score = { "english-us": 0, "english-uk": 0, "english-in": 0, "english-af": 0 };
+  const american = [
+    /\bcolor\b/,
+    /\bfavorite\b/,
+    /\bcenter\b/,
+    /\borganize\b/,
+    /\btruck\b/,
+    /\bapartment\b/,
+    /\bvacation\b/
+  ];
 
-  for (const k of us) if (t.includes(k)) score["english-us"] += 1;
-  for (const k of uk) if (t.includes(k)) score["english-uk"] += 1;
-  for (const k of india) if (t.includes(k)) score["english-in"] += 1;
-  for (const k of africa) if (t.includes(k)) score["english-af"] += 1;
+  const british = [
+    /\bcolour\b/,
+    /\bfavourite\b/,
+    /\bcentre\b/,
+    /\borganise\b/,
+    /\blorry\b/,
+    /\bflat\b/,
+    /\bholiday\b/,
+    /\bcheers\b/
+  ];
 
-  const entries = Object.entries(score).sort((a, b) => b[1] - a[1]);
-  const top = entries[0];
-  if (!top || top[1] === 0) return { variant: "english", confidence: 0.7 };
+  const indian = [
+    /\bkindly\b/,
+    /\bplease do the needful\b/,
+    /\brevert back\b/,
+    /\bprepone\b/,
+    /\bonwards\b/,
+    /\bupdation\b/
+  ];
 
-  return { variant: top[0], confidence: Math.min(0.9, 0.7 + top[1] * 0.05) };
+  const african = [
+    /\bhow far\b/,
+    /\bwahala\b/,
+    /\bno wahala\b/,
+    /\bchop\b/,
+    /\bdash\b/
+  ];
+
+  const canadian = [
+    /\bcolour\b/,
+    /\bcentre\b/,
+    /\btoque\b/,
+    /\bloonie\b/,
+    /\btuque\b/
+  ];
+
+  const usScore = countMatches(lower, american);
+  const ukScore = countMatches(lower, british);
+  const inScore = countMatches(lower, indian);
+  const afScore = countMatches(lower, african);
+  const caScore = countMatches(lower, canadian);
+
+  const scores = [
+    { lang: "english-us", score: usScore },
+    { lang: "english-uk", score: ukScore },
+    { lang: "english-in", score: inScore },
+    { lang: "english-af", score: afScore },
+    { lang: "english-ca", score: caScore }
+  ].sort((a, b) => b.score - a.score);
+
+  const top = scores[0];
+
+  if (!top || top.score === 0) {
+    return { language: "english", confidence: 0.75 };
+  }
+
+  let conf = 0.75;
+  if (top.score >= 2) conf = 0.85;
+  if (top.score >= 3) conf = 0.9;
+
+  return { language: top.lang, confidence: conf };
 }
 
 function detectLanguage(text) {
-  const trimmed = normalizeText(text);
-  if (!trimmed) {
+  if (!text) {
     return { language: "unknown", confidence: 0 };
   }
 
-  const arabicRange = /[\u0600-\u06FF]/;
-  const englishRange = /[A-Za-z]/;
-
-  const hasArabic = arabicRange.test(trimmed);
-  const hasEnglish = englishRange.test(trimmed);
-
-  if (hasArabic && !hasEnglish) {
-    const d = detectArabicDialect(trimmed);
-    return { language: d.dialect, confidence: d.confidence };
+  const t = normalizeText(text);
+  if (!t) {
+    return { language: "unknown", confidence: 0 };
   }
 
-  if (!hasArabic && hasEnglish) {
-    const v = detectEnglishVariant(trimmed);
-    return { language: v.variant, confidence: v.confidence };
+  const hasAr = hasArabicChars(t);
+  const hasEn = hasLatinChars(t);
+
+  if (hasAr && !hasEn) {
+    return detectArabicVariant(t);
   }
 
-  if (hasArabic && hasEnglish) {
+  if (!hasAr && hasEn) {
+    return detectEnglishVariant(t);
+  }
+
+  if (hasAr && hasEn) {
     return { language: "mixed", confidence: 0.75 };
   }
 
