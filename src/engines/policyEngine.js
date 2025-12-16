@@ -30,7 +30,8 @@ function evaluatePolicy(input) {
   const normalized = input && typeof input === "object" ? input : {};
   const route = normalizeRoute(normalized.route);
   const safety = normalizeSafety(normalized.safety);
-  const contextHalo = typeof normalized.context_halo === "string" ? normalized.context_halo : "general";
+  const contextHalo =
+    typeof normalized.context_halo === "string" ? normalized.context_halo : "general";
 
   const changes = [];
   const rulesTriggered = [];
@@ -39,26 +40,24 @@ function evaluatePolicy(input) {
   let finalUseLLM = base.useLLM;
   let finalMode = base.mode;
 
-  let finalMaxTokens = clampNumber(base.maxTokens, 30, 500, 120);
-  let finalTemperature = clampNumber(base.temperature, 0, 1, 0.35);
+  let finalMaxTokens = clampNumber(base.maxTokens, 30, 500, 150);
+  let finalTemperature = clampNumber(base.temperature, 0, 1, 0.5);
 
-  if (safety.category === "self_harm" || safety.level === "extreme") {
-    rulesTriggered.push("SAFETY_EXTREME_NO_LLM");
-    if (finalUseLLM !== false) changes.push({ field: "useLLM", from: finalUseLLM, to: false });
-    finalUseLLM = false;
+  const isCriticalNoLLM =
+    safety.category === "self_harm" ||
+    safety.category === "harm_others" ||
+    safety.category === "medical_emergency";
 
-    if (finalMode !== "fast") changes.push({ field: "mode", from: finalMode, to: "fast" });
-    finalMode = "fast";
+  const isTraumaSensitive =
+    safety.category === "trauma";
 
-    const cappedTokens = 80;
-    if (finalMaxTokens !== cappedTokens) changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
-    finalMaxTokens = cappedTokens;
+  const isPanicAttack =
+    safety.category === "panic_attack";
 
-    const cappedTemp = 0.2;
-    if (finalTemperature !== cappedTemp) changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
-    finalTemperature = cappedTemp;
-  } else if (safety.flag === "high_risk") {
-    rulesTriggered.push("SAFETY_HIGH_RISK_NO_LLM");
+  // 1) CRITICAL SAFETY -> KILL LLM
+  if (isCriticalNoLLM || safety.level === "extreme") {
+    rulesTriggered.push("SAFETY_CRITICAL_NO_LLM");
+
     if (finalUseLLM !== false) changes.push({ field: "useLLM", from: finalUseLLM, to: false });
     finalUseLLM = false;
 
@@ -66,24 +65,94 @@ function evaluatePolicy(input) {
     finalMode = "fast";
 
     const cappedTokens = 90;
-    if (finalMaxTokens !== cappedTokens) changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
-    finalMaxTokens = cappedTokens;
+    if (finalMaxTokens > cappedTokens)
+      changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
+    finalMaxTokens = Math.min(finalMaxTokens, cappedTokens);
 
-    const cappedTemp = 0.25;
-    if (finalTemperature !== cappedTemp) changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
-    finalTemperature = cappedTemp;
-  } else if (safety.flag === "high_stress" || contextHalo === "emotional_discomfort") {
-    rulesTriggered.push("STRESS_CONTROLLED_LLM");
+    const cappedTemp = 0.2;
+    if (finalTemperature > cappedTemp)
+      changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
+    finalTemperature = Math.min(finalTemperature, cappedTemp);
+
+  // 2) PANIC ATTACK -> CONTROLLED LLM (NOT KILL)
+  } else if (isPanicAttack) {
+    rulesTriggered.push("SAFETY_PANIC_CONTROLLED_LLM");
+
+    if (finalUseLLM !== true) changes.push({ field: "useLLM", from: finalUseLLM, to: true });
+    finalUseLLM = true;
+
     if (finalMode !== "balanced") changes.push({ field: "mode", from: finalMode, to: "balanced" });
     finalMode = "balanced";
 
-    const cappedTokens = Math.min(finalMaxTokens, 160);
-    if (finalMaxTokens !== cappedTokens) changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
-    finalMaxTokens = cappedTokens;
+    const cappedTokens = 140;
+    if (finalMaxTokens > cappedTokens)
+      changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
+    finalMaxTokens = Math.min(finalMaxTokens, cappedTokens);
 
-    const cappedTemp = Math.min(finalTemperature, 0.4);
-    if (finalTemperature !== cappedTemp) changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
-    finalTemperature = cappedTemp;
+    const cappedTemp = 0.15;
+    if (finalTemperature > cappedTemp)
+      changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
+    finalTemperature = Math.min(finalTemperature, cappedTemp);
+
+  // 3) TRAUMA -> CONTROLLED LLM (SENSITIVE)
+  } else if (isTraumaSensitive) {
+    rulesTriggered.push("SAFETY_TRAUMA_CONTROLLED_LLM");
+
+    if (finalUseLLM !== true) changes.push({ field: "useLLM", from: finalUseLLM, to: true });
+    finalUseLLM = true;
+
+    if (finalMode !== "balanced") changes.push({ field: "mode", from: finalMode, to: "balanced" });
+    finalMode = "balanced";
+
+    const cappedTokens = 120;
+    if (finalMaxTokens > cappedTokens)
+      changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
+    finalMaxTokens = Math.min(finalMaxTokens, cappedTokens);
+
+    const cappedTemp = 0.2;
+    if (finalTemperature > cappedTemp)
+      changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
+    finalTemperature = Math.min(finalTemperature, cappedTemp);
+
+  // 4) HIGH RISK (non-critical) -> RESTRICT LLM (DO NOT KILL)
+  } else if (safety.flag === "high_risk" || safety.isHighRisk) {
+    rulesTriggered.push("SAFETY_RISK_CONTROLLED_LLM");
+
+    if (finalUseLLM !== true) changes.push({ field: "useLLM", from: finalUseLLM, to: true });
+    finalUseLLM = true;
+
+    if (finalMode !== "balanced") changes.push({ field: "mode", from: finalMode, to: "balanced" });
+    finalMode = "balanced";
+
+    const cappedTokens = 110;
+    if (finalMaxTokens > cappedTokens)
+      changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
+    finalMaxTokens = Math.min(finalMaxTokens, cappedTokens);
+
+    const cappedTemp = 0.2;
+    if (finalTemperature > cappedTemp)
+      changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
+    finalTemperature = Math.min(finalTemperature, cappedTemp);
+
+  // 5) HIGH STRESS / EMOTIONAL DISCOMFORT -> SUPPORTIVE CONTROLLED LLM
+  } else if (safety.flag === "high_stress" || contextHalo === "emotional_discomfort") {
+    rulesTriggered.push("STRESS_CONTROLLED_LLM");
+
+    if (finalUseLLM !== true) changes.push({ field: "useLLM", from: finalUseLLM, to: true });
+    finalUseLLM = true;
+
+    if (finalMode !== "balanced") changes.push({ field: "mode", from: finalMode, to: "balanced" });
+    finalMode = "balanced";
+
+    const cappedTokens = 160;
+    if (finalMaxTokens > cappedTokens)
+      changes.push({ field: "maxTokens", from: finalMaxTokens, to: cappedTokens });
+    finalMaxTokens = Math.min(finalMaxTokens, cappedTokens);
+
+    const cappedTemp = 0.4;
+    if (finalTemperature > cappedTemp)
+      changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
+    finalTemperature = Math.min(finalTemperature, cappedTemp);
   }
 
   const enforcedRoute = {

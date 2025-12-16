@@ -1,12 +1,26 @@
-const LLM_API_URL = process.env.LLM_API_URL || "";
-const LLM_API_KEY = process.env.LLM_API_KEY || "";
-const DEFAULT_LLM_MODEL = process.env.LLM_MODEL || "gpt-4o";
+function getApiUrl() {
+  return process.env.LLM_API_URL || "";
+}
+
+function getApiKey() {
+  return process.env.LLM_API_KEY || "";
+}
+
+function getDefaultModel() {
+  return process.env.LLM_MODEL || "gpt-4o";
+}
 
 function isConfigured() {
-  return LLM_API_URL !== "" && LLM_API_KEY !== "";
+  const url = getApiUrl();
+  const key = getApiKey();
+  return url !== "" && key !== "";
 }
 
 async function callLLM(payload) {
+  const apiUrl = getApiUrl();
+  const apiKey = getApiKey();
+  const defaultModel = getDefaultModel();
+
   if (!isConfigured()) {
     return {
       success: false,
@@ -15,12 +29,12 @@ async function callLLM(payload) {
       output: null,
       engine: {
         source: "llm",
-        model: DEFAULT_LLM_MODEL
+        model: defaultModel
       }
     };
   }
 
-  const model = payload.model || DEFAULT_LLM_MODEL;
+  const model = payload.model || defaultModel;
 
   const temperature =
     typeof payload.temperature === "number" ? payload.temperature : 0.4;
@@ -58,11 +72,11 @@ async function callLLM(payload) {
 
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${LLM_API_KEY}`
+    Authorization: `Bearer ${apiKey}`
   };
 
   try {
-    const response = await fetch(LLM_API_URL, {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(body)

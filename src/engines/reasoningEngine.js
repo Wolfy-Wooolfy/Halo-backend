@@ -258,19 +258,15 @@ async function generateResponse(options) {
   const memory = safeOptions.memory || {};
   const lastReasoning = safeOptions.lastReasoning || null;
   const route = safeOptions.route || {};
+  const policy = safeOptions.policy || null;
 
-  const fallbackRaw = buildFallbackResponse({
-    language,
-    context
-  });
-
+  const fallbackRaw = buildFallbackResponse({ language, context });
   const fallback = sanitizeHaloResponse(fallbackRaw, language);
 
   const llmAllowedByRoute = typeof route.useLLM === "boolean" ? route.useLLM : true;
   const llmAvailable = isConfigured();
-  const isHighRisk = safety.flag === "high_risk" || safety.level === "high";
 
-  if (!message || !llmAvailable || !llmAllowedByRoute || isHighRisk) {
+  if (!message || !llmAvailable || !llmAllowedByRoute) {
     return {
       reflection: fallback.reflection,
       question: fallback.question,
@@ -291,7 +287,9 @@ async function generateResponse(options) {
       context,
       safety,
       memory_snapshot: memory,
-      lastReasoning
+      lastReasoning,
+      route,
+      policy
     });
 
     const maxTokens =
@@ -308,7 +306,8 @@ async function generateResponse(options) {
       prompt,
       model,
       temperature,
-      maxTokens
+      maxTokens,
+      responseFormat: { type: "json_object" }
     });
 
     if (!llmResult || !llmResult.success) {
@@ -328,36 +327,14 @@ async function generateResponse(options) {
       };
     }
 
-    let text = "";
     let parsed = null;
+    let text = "";
 
     if (llmResult.output) {
-      if (typeof llmResult.output === "string") {
+      if (typeof llmResult.output === "object") {
+        parsed = coerceHaloJson(llmResult.output);
+      } else if (typeof llmResult.output === "string") {
         text = llmResult.output;
-      } else if (typeof llmResult.output === "object") {
-        parsed = coerceHaloJson(llmResult.output) || {
-          reflection: llmResult.output.reflection || "",
-          question: llmResult.output.question || "",
-          micro_step: llmResult.output.micro_step || llmResult.output.microStep || ""
-        };
-      }
-    }
-
-    if (!parsed && !text) {
-      const raw = llmResult.raw || {};
-      if (raw && Array.isArray(raw.choices) && raw.choices[0]) {
-        const choice = raw.choices[0];
-        if (typeof choice.text === "string") {
-          text = choice.text;
-        } else if (choice.message && typeof choice.message.content === "string") {
-          text = choice.message.content;
-        }
-      } else if (typeof raw.output === "string") {
-        text = raw.output;
-      } else if (typeof raw.result === "string") {
-        text = raw.result;
-      } else if (typeof raw.content === "string") {
-        text = raw.content;
       }
     }
 

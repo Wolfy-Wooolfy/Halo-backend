@@ -192,6 +192,58 @@ function buildSafetyLayer(safety, context, language) {
   ].join(" ");
 }
 
+function buildPolicyLayer(policy, route, language) {
+  const isArabic = isArabicBase(language);
+  const p = policy && typeof policy === "object" ? policy : null;
+  const r = route && typeof route === "object" ? route : null;
+
+  const mode = r && typeof r.mode === "string" ? r.mode : "balanced";
+  const maxTokens = r && typeof r.maxTokens === "number" ? r.maxTokens : null;
+  const temperature = r && typeof r.temperature === "number" ? r.temperature : null;
+  const useLLM = r && typeof r.useLLM === "boolean" ? r.useLLM : null;
+
+  const rules = p && Array.isArray(p.rulesTriggered) ? p.rulesTriggered : [];
+  const changes = p && Array.isArray(p.changes) ? p.changes : [];
+
+  const rulesLine = rules.length ? rules.join(", ") : "none";
+  const changesLine = changes.length ? changes.map((c) => {
+    const f = c && c.field ? String(c.field) : "";
+    const from = c && "from" in c ? String(c.from) : "";
+    const to = c && "to" in c ? String(c.to) : "";
+    return f && to ? f + ": " + from + " → " + to : "";
+  }).filter(Boolean).join(" | ") : "none";
+
+  if (isArabic) {
+    return [
+      "سياسة التنفيذ (Policy):",
+      "التزم بهذه القيود حرفيًا ولا تكسرها.",
+      "اخرج JSON فقط.",
+      "لا تكتب أي نص خارج JSON.",
+      "لا تكتب خطوات متعددة: خطوة واحدة فقط.",
+      "الوضع: " + mode,
+      "useLLM: " + (useLLM === null ? "unknown" : String(useLLM)),
+      "maxTokens: " + (maxTokens === null ? "auto" : String(maxTokens)),
+      "temperature: " + (temperature === null ? "auto" : String(temperature)),
+      "rulesTriggered: " + rulesLine,
+      "changes: " + changesLine
+    ].join(" ");
+  }
+
+  return [
+    "Policy enforcement:",
+    "Follow these constraints strictly and do not violate them.",
+    "Output JSON only.",
+    "No text outside JSON.",
+    "No multi-step plans: one micro-step only.",
+    "mode: " + mode,
+    "useLLM: " + (useLLM === null ? "unknown" : String(useLLM)),
+    "maxTokens: " + (maxTokens === null ? "auto" : String(maxTokens)),
+    "temperature: " + (temperature === null ? "auto" : String(temperature)),
+    "rulesTriggered: " + rulesLine,
+    "changes: " + changesLine
+  ].join(" ");
+}
+
 function buildMemorySummaryFromSnapshot(memory, language) {
   const isArabic = isArabicBase(language);
 
@@ -286,6 +338,8 @@ function buildHaloPrompt(options) {
   const language = options && options.language ? options.language : "en";
   const context = options && options.context ? options.context : "";
   const safety = options && options.safety ? options.safety : null;
+  const route = options && options.route ? options.route : null;
+  const policy = options && options.policy ? options.policy : null;
 
   let memorySnapshot = null;
   if (options && options.memory_snapshot) {
@@ -301,6 +355,7 @@ function buildHaloPrompt(options) {
   const systemDirective = buildSystemDirective(language);
   const behaviorLayer = buildBehaviorLayer(language);
   const safetyLayer = buildSafetyLayer(safety, context, language);
+  const policyLayer = buildPolicyLayer(policy, route, language);
   const memorySummary = buildMemorySummaryFromSnapshot(memorySnapshot, language);
   const taskSection = buildTaskSection(language);
   const outputFormatSection = buildOutputFormatSection(language);
@@ -315,6 +370,9 @@ function buildHaloPrompt(options) {
   sections.push("");
   sections.push("SAFETY:");
   sections.push(safetyLayer);
+  sections.push("");
+  sections.push("POLICY:");
+  sections.push(policyLayer);
   sections.push("");
   sections.push("MEMORY:");
   sections.push(memorySummary);
