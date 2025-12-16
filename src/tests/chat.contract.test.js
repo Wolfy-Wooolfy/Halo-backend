@@ -2,7 +2,7 @@ const request = require("supertest");
 const app = require("../../server");
 
 describe("HALO /api/chat Contract Test", () => {
-  it("should always return routing and engine metadata", async () => {
+  it("should always return routing, policy, and engine metadata", async () => {
     const response = await request(app)
       .post("/api/chat")
       .send({
@@ -25,5 +25,15 @@ describe("HALO /api/chat Contract Test", () => {
     expect(body.routing.maxTokens).toBeDefined();
     expect(body.routing.temperature).toBeDefined();
     expect(body.routing.reason).toBeDefined();
+
+    expect(body.policy).toBeDefined();
+    expect(typeof body.policy.applied).toBe("boolean");
+    expect(Array.isArray(body.policy.rulesTriggered)).toBe(true);
+    expect(Array.isArray(body.policy.changes)).toBe(true);
+    expect(body.policy.final).toBeDefined();
+    expect(body.policy.final.mode).toBeDefined();
+    expect(typeof body.policy.final.useLLM).toBe("boolean");
+    expect(body.policy.final.maxTokens).toBeDefined();
+    expect(body.policy.final.temperature).toBeDefined();
   });
 });

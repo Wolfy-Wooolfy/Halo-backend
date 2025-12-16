@@ -10,8 +10,7 @@ const languageDetector = require("../engines/languageDetector");
 const contextClassifier = require("../engines/contextClassifier");
 
 const { decideRoute } = require("../engines/routingEngine");
-
-// --- Helper Adapters ---
+const { evaluatePolicy } = require("../engines/policyEngine");
 
 function getNormalizeFn() {
   if (typeof messageNormalizer === "function") return messageNormalizer;
@@ -30,8 +29,6 @@ function getLanguageDetectorFn() {
     return languageDetector.detect;
   if (languageDetector && typeof languageDetector.detectLanguage === "function")
     return languageDetector.detectLanguage;
-  
-  // Fallback
   return function () {
     return { language: "mixed", confidence: 0 };
   };
@@ -50,12 +47,9 @@ function getContextClassifierFn() {
   };
 }
 
-// --- Initialize Adapters ---
 const normalize = getNormalizeFn();
 const detectLang = getLanguageDetectorFn();
 const classifyCtx = getContextClassifierFn();
-
-// --- Logic Helpers ---
 
 function resolveLanguageCode(languageInfo) {
   if (!languageInfo) return "en";
@@ -95,7 +89,7 @@ function mapContextForHalo(category) {
   if (c === "emotional_discomfort") return "emotional_discomfort";
   if (c === "decision_making") return "decision";
   if (c === "planning") return "planning";
-  if (c === "high_stress") return "emotional_discomfort"; // Treat high stress as discomfort for core logic
+  if (c === "high_stress") return "emotional_discomfort";
   if (c === "casual_conversation") return "general";
   if (c === "low_stress") return "general";
   if (c === "unclear") return "general";
@@ -103,31 +97,24 @@ function mapContextForHalo(category) {
   return "general";
 }
 
-// --- Main Chat Route ---
-
 router.post("/chat", async (req, res) => {
   try {
     const body = req.body || {};
     const userId = body.user_id || "anonymous";
     const rawMessage = body.message || "";
 
-    // 1. Pipeline: Normalize -> Detect -> Classify -> Safety
     const normalizedMessage = normalize(rawMessage);
     const languageInfo = detectLang(normalizedMessage);
     const rawContextInfo = classifyCtx(normalizedMessage);
     const safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
 
-    // 2. Resolve Language & Context
     const langCode = resolveLanguageCode(languageInfo);
     const languageVariantRaw = extractLanguageVariant(languageInfo);
-    // Force Egyptian dialect preference for Arabic speakers as per Persona rules
     const languageVariant = langCode === "ar" ? "arabic-eg" : languageVariantRaw;
     const haloContext = mapContextForHalo(rawContextInfo.category);
-    
-    // 3. Fetch Memory
+
     const previousMemory = getUserMemory(userId);
 
-    // 4. Routing Decision (The Brain)
     const routeDecision = decideRoute({
       normalizedMessage,
       message: normalizedMessage,
@@ -139,8 +126,20 @@ router.post("/chat", async (req, res) => {
       memory_snapshot: previousMemory
     });
 
-    // 5. Reasoning Engine (Generate Response)
-    // Now explicitly aware of the route decision (useLLM, fast/balanced mode)
+    const policyResult = evaluatePolicy({
+      route: routeDecision,
+      safety: safetyInfo,
+      context_halo: haloContext,
+      context_raw: rawContextInfo,
+      memory_snapshot: previousMemory,
+      language_code: langCode,
+      language_variant: languageVariant,
+      message: normalizedMessage
+    });
+
+    const enforcedRoute = policyResult && policyResult.route ? policyResult.route : routeDecision;
+    const policy = policyResult && policyResult.policy ? policyResult.policy : { applied: false, rulesTriggered: [], changes: [], final: null };
+
     const halo = await reasoningEngine.generateResponse({
       message: normalizedMessage,
       language: languageVariant,
@@ -152,16 +151,17 @@ router.post("/chat", async (req, res) => {
         previousMemory && previousMemory.lastReasoning
           ? previousMemory.lastReasoning
           : null,
-      route: routeDecision
+      route: enforcedRoute,
+      policy
     });
 
-    // Debug Logging
     if (process.env.HALO_DEBUG === "1") {
       console.log("HALO_ENGINE:", halo && halo.engine ? halo.engine : null);
-      console.log("HALO_ROUTE:", routeDecision);
+      console.log("HALO_ROUTE_RAW:", routeDecision);
+      console.log("HALO_ROUTE_ENFORCED:", enforcedRoute);
+      console.log("HALO_POLICY:", policy);
     }
 
-    // 6. Memory Update
     const memoryResult = updateUserMemory({
       userId,
       message: normalizedMessage,
@@ -172,7 +172,6 @@ router.post("/chat", async (req, res) => {
       reasoning: halo
     });
 
-    // 7. Final Response Construction
     return res.status(200).json({
       ok: true,
       user_id: userId,
@@ -180,7 +179,7 @@ router.post("/chat", async (req, res) => {
       question: halo.question,
       micro_step: halo.micro_step,
       safety_flag: halo.safety_flag || safetyInfo.flag,
-      engine: halo.engine || { source: "missing", model: "unknown" }, // Ensuring engine visibility
+      engine: halo.engine || { source: "missing", model: "unknown" },
       memory_update: halo.memory_update,
       meta: {
         language: languageInfo,
@@ -192,7 +191,9 @@ router.post("/chat", async (req, res) => {
       memory_snapshot: memoryResult.memory,
       memory_delta: memoryResult.delta,
       previous_memory: previousMemory,
-      routing: routeDecision // Exposing routing logic for debugging
+      routing: enforcedRoute,
+      policy,
+      routing_raw: routeDecision
     });
 
   } catch (err) {
