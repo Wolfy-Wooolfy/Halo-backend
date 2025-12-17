@@ -188,6 +188,11 @@ Role: Applies extracted memory signals into structured memory storage.
 
 ---
 
+### messageNormalizer.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/refs/heads/main/src/engines/messageNormalizer.js
+
+---
+
 ### 4.6 Tests
 
 #### src/tests/chat.contract.test.js  
