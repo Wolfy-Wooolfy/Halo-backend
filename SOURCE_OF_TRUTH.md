@@ -257,56 +257,186 @@ API contract enforcement.
 Guarantees response shape stability and backward compatibility.
 
 ---
+## 5) HALO Documents Map  
+### (RAW – Authoritative Concept, Rules & Governance)
 
-## 5) HALO Documents Map (RAW – Authoritative Reference)
+All documents listed below are **authoritative references** for HALO behavior, scope, rules, UX, safety, growth, and long-term evolution.
 
-> These files define **WHY and HOW HALO behaves**,  
-> but they do not execute code.
+They may not execute code directly, but:
+- They DEFINE how the system must behave
+- They GOVERN future code changes
+- They OVERRIDE assumptions in case of ambiguity
+- They are binding for design, UX, safety, and intelligence decisions
+
+No document listed here may be ignored, skipped, or overridden.
 
 ---
 
-### HALO – Build Progress Log (Live)  
+### HALO – Memory System — Growth + Semantic Engine
+RAW:  
+(TO BE ADDED)  
+Role:  
+Defines memory growth philosophy, semantic expansion rules, and how user memory evolves over time.
+
+---
+
+### HALO – Build Progress Log (Live)
 RAW:  
 https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Build%20Progress%20Log%20(Live).md  
 Role:  
-Chronological log of all engineering decisions and milestones.
+Chronological, immutable log of all confirmed engineering decisions, changes, and milestones.
 
 ---
 
-### HALO – Cognitive & Interaction Core (Unified Edition)  
+### HALO – Business & Growth Strategy
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Business%20%26%20Growth%20Strategy.md  
+Role:  
+Defines monetization logic, growth assumptions, market positioning, and scaling strategy.
+
+---
+
+### HALO – Cognitive & Interaction Core (Unified Edition)
 RAW:  
 https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Cognitive%20%26%20Interaction%20Core%20(Unified%20Edition).md  
 Role:  
-Defines HALO’s thinking model, response philosophy, and interaction principles.
+Canonical definition of HALO’s thinking model, interaction philosophy, response structure, and behavioral constraints.
 
 ---
 
-### HALO – Safety Framework  
+### HALO – Core User Journeys
 RAW:  
-https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Safety%20Framework.md  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Core%20User%20Journeys.md  
 Role:  
-Authoritative safety rules and escalation logic.
+Defines primary user flows, expected interactions, and lifecycle touchpoints.
 
 ---
 
-### HALO – Prompt Architecture  
+### HALO – Day-1 Experience Toolkit
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Day-1%20Experience%20Toolkit.md  
+Role:  
+Defines onboarding logic, first-use behavior, and initial trust-building experience.
+
+---
+
+### HALO – Developer Implementation Guide (Version 0.1)
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Developer%20Implementation%20Guide%20(Version%200.1).md  
+Role:  
+Technical guidance for implementing HALO concepts correctly and consistently.
+
+---
+
+### HALO – Failover & Recovery Logic
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Failover%20%26%20Recovery%20Logic.md  
+Role:  
+Defines system behavior under failure, degradation, and recovery scenarios.
+
+---
+
+### HALO – Final UX Clarifications & Micro-Rules (Version 1.0)
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Final%20UX%20Clarifications%20%26%20Micro-Rules%20(Version%201.0).md  
+Role:  
+Authoritative UX micro-rules, phrasing constraints, and interaction details.
+
+---
+
+### HALO – Master Index (Single Source of Truth)
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Master%20Index%20(Single%20Source%20of%20Truth).md  
+Role:  
+Global index linking all HALO documents and defining precedence.
+
+---
+
+### HALO – Model Routing Specification
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Model%20Routing%20Specification.md  
+Role:  
+Defines model selection logic, routing decisions, and fallback behavior.
+
+---
+
+### HALO – Multi-Language Intelligence Rules
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Multi-Language%20Intelligence%20Rules.md  
+Role:  
+Defines language handling, dialect awareness, cultural sensitivity, and tone adaptation.
+
+---
+
+### HALO – Product Scope & Evolution Map (Unified)
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Product%20Scope%20%26%20Evolution%20Map%20(Unified).md  
+Role:  
+Defines current scope, future phases, and controlled evolution of HALO.
+
+---
+
+### HALO – Project Overview
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Project%20Overview.md  
+Role:  
+High-level description of HALO vision, purpose, and system identity.
+
+---
+
+### HALO – Prompt Architecture
 RAW:  
 https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Prompt%20Architecture.md  
 Role:  
-Canonical prompt design patterns and composition rules.
+Defines prompt composition rules, structure, and constraints.
 
 ---
 
-### HALO – System Architecture & Intelligence Map  
+### HALO – Retention Architecture
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Retention%20Architecture.md  
+Role:  
+Defines retention mechanics, long-term engagement logic, and memory-driven stickiness.
+
+---
+
+### HALO – Safety Framework
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Safety%20Framework.md  
+Role:  
+Canonical safety rules, escalation logic, and risk boundaries.
+
+---
+
+### HALO – System Architecture & Intelligence Map
 RAW:  
 https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20System%20Architecture%20%26%20Intelligence%20Map.md  
 Role:  
-Big-picture system topology and intelligence flow.
+End-to-end system topology and intelligence flow map.
 
 ---
 
-(باقي ملفات الـ Docs تعتبر: Product Vision / UX / Growth / Strategy  
-ولا تؤثر مباشرة على التنفيذ البرمجي)
+### HALO – Target User Profile
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Target%20User%20Profile.md  
+Role:  
+Defines the intended user, their needs, constraints, and expectations.
+
+---
+
+### HALO – UX FLOW
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20UX%20FLOW.md  
+Role:  
+Defines detailed UX flow, screens, and interaction transitions.
+
+---
+
+### HALO – User Personas Profiles
+RAW:  
+https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20User%20Personas%20Profiles.md  
+Role:  
+Defines user archetypes and behavioral patterns for design and reasoning alignment.
 
 ---
 
