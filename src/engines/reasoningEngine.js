@@ -14,31 +14,23 @@ function buildPreview(text) {
 function stripCodeFences(text) {
   const t = normalizeText(text);
   if (!t) return "";
-  return t
-    .replace(/^```json/i, "")
-    .replace(/^```/i, "")
-    .replace(/```$/i, "")
-    .trim();
+  return t.replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
 }
 
 function extractFirstJsonObject(text) {
   const t = normalizeText(text);
   if (!t) return null;
-
   const start = t.indexOf("{");
   const end = t.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) return null;
-
   const candidate = t.slice(start, end + 1).trim();
   if (!candidate.startsWith("{") || !candidate.endsWith("}")) return null;
-
   return candidate;
 }
 
 function safeParseJson(text) {
   const cleaned = stripCodeFences(text);
   if (!cleaned) return null;
-
   try {
     return JSON.parse(cleaned);
   } catch (e) {
@@ -54,51 +46,32 @@ function safeParseJson(text) {
 
 function coerceHaloJson(obj) {
   if (!obj || typeof obj !== "object") return null;
-
   const reflection = normalizeText(obj.reflection);
   const question = normalizeText(obj.question);
-  const micro =
-    normalizeText(obj.micro_step) ||
-    normalizeText(obj.microStep) ||
-    normalizeText(obj.microstep);
-
+  const micro = normalizeText(obj.micro_step) || normalizeText(obj.microStep) || normalizeText(obj.microstep);
   if (!reflection || !question) return null;
-
-  return {
-    reflection,
-    question,
-    micro_step: micro || ""
-  };
+  return { reflection, question, micro_step: micro || "" };
 }
 
 function extractHaloLinesFromLLMText(text) {
   if (!text || typeof text !== "string") {
     return null;
   }
-
   const cleaned = text.replace(/\s+/g, " ").trim();
   if (!cleaned) {
     return null;
   }
-
   const parts = cleaned
     .split(/[\.!\?]+/)
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
-
   if (parts.length < 2) {
     return null;
   }
-
   const reflection = parts[0];
   const question = parts[1];
   const microStep = parts[2] || "";
-
-  return {
-    reflection,
-    question,
-    micro_step: microStep
-  };
+  return { reflection, question, micro_step: microStep };
 }
 
 function normalizeLanguageFamily(language) {
@@ -116,7 +89,6 @@ function normalizeLanguageFamily(language) {
 function sanitizeEgyptianArabic(text) {
   const t = normalizeText(text);
   if (!t) return "";
-
   return t
     .replace(/مضايقني/g, "مقلقني")
     .replace(/مضايقاك/g, "مقلقك")
@@ -133,9 +105,7 @@ function sanitizeEgyptianArabic(text) {
 
 function sanitizeHaloResponse(obj, language) {
   if (!obj || typeof obj !== "object") return obj;
-
   const languageFamily = normalizeLanguageFamily(language);
-
   if (languageFamily !== "ar") {
     return {
       reflection: normalizeText(obj.reflection),
@@ -143,11 +113,73 @@ function sanitizeHaloResponse(obj, language) {
       micro_step: normalizeText(obj.micro_step)
     };
   }
-
   return {
     reflection: sanitizeEgyptianArabic(obj.reflection),
     question: sanitizeEgyptianArabic(obj.question),
     micro_step: sanitizeEgyptianArabic(obj.micro_step)
+  };
+}
+
+function buildEmergencyResponse(options) {
+  const languageRaw = options && options.language ? String(options.language) : "en";
+  const languageFamily = normalizeLanguageFamily(languageRaw);
+  const safety = options && options.safety ? options.safety : {};
+  const category = safety && typeof safety.category === "string" ? safety.category : "none";
+
+  if (languageFamily === "ar") {
+    if (category === "self_harm") {
+      return {
+        reflection: "أنا واخد كلامك بجد.",
+        question: "هل أنت في أمان دلوقتي؟",
+        micro_step: "لو في خطر مباشر، اتصل بالإسعاف/الشرطة فورًا أو اطلب من شخص قريب يبقى معاك حالًا."
+      };
+    }
+    if (category === "harm_others") {
+      return {
+        reflection: "أنا واخد كلامك بجد.",
+        question: "هل تقدر تبعد نفسك عن أي وسيلة أذى دلوقتي؟",
+        micro_step: "سيب المكان فورًا واطلب مساعدة عاجلة من شخص قريب أو اتصل بالطوارئ."
+      };
+    }
+    if (category === "medical_emergency") {
+      return {
+        reflection: "ده ممكن يكون طارئ طبي.",
+        question: "هل في حد معاك يقدر يساعدك الآن؟",
+        micro_step: "اتصل بالإسعاف فورًا، ولو تقدر اقعد/استلقي في مكان آمن لحد ما المساعدة توصل."
+      };
+    }
+    return {
+      reflection: "أنا واخد كلامك بجد.",
+      question: "هل أنت في أمان دلوقتي؟",
+      micro_step: "لو في خطر مباشر، اتصل بالطوارئ أو اطلب شخص قريب يبقى معاك حالًا."
+    };
+  }
+
+  if (category === "self_harm") {
+    return {
+      reflection: "I’m taking what you said seriously.",
+      question: "Are you safe right now?",
+      micro_step: "If there’s immediate danger, call your local emergency services now or ask someone nearby to stay with you."
+    };
+  }
+  if (category === "harm_others") {
+    return {
+      reflection: "I’m taking what you said seriously.",
+      question: "Can you move away from anything that could cause harm right now?",
+      micro_step: "Leave the situation and get urgent help from someone nearby or call emergency services."
+    };
+  }
+  if (category === "medical_emergency") {
+    return {
+      reflection: "This may be a medical emergency.",
+      question: "Is someone with you who can help right now?",
+      micro_step: "Call emergency services now, and if possible sit/lie down in a safe place until help arrives."
+    };
+  }
+  return {
+    reflection: "I’m taking what you said seriously.",
+    question: "Are you safe right now?",
+    micro_step: "If there’s immediate danger, call emergency services or get someone nearby to stay with you."
   };
 }
 
@@ -164,7 +196,6 @@ function buildFallbackResponse(options) {
         micro_step: "خد نفس بطيء واحد قبل ما ترد."
       };
     }
-
     if (context === "decision") {
       return {
         reflection: "واضح إن عندك قرار محتاج حسم.",
@@ -172,15 +203,9 @@ function buildFallbackResponse(options) {
         micro_step: "اكتب بس اسم الاختيار الأقرب لقلبك."
       };
     }
-
     if (context === "general") {
-      return {
-        reflection: "فاهمك.",
-        question: "تحب نبدأ بإيه الأول؟",
-        micro_step: "اختار نقطة واحدة بس ونبدأ بيها."
-      };
+      return { reflection: "فاهمك.", question: "تحب نبدأ بإيه الأول؟", micro_step: "اختار نقطة واحدة بس ونبدأ بيها." };
     }
-
     return {
       reflection: "حاسس إن الصورة مش واضحة بالكامل.",
       question: "إيه الجزئية اللي محتاجة توضيح أكتر؟",
@@ -195,7 +220,6 @@ function buildFallbackResponse(options) {
       micro_step: "Take one slow breath before you answer."
     };
   }
-
   if (context === "decision") {
     return {
       reflection: "It seems you’re standing in front of a choice.",
@@ -203,7 +227,6 @@ function buildFallbackResponse(options) {
       micro_step: "Write just the option that feels slightly lighter."
     };
   }
-
   if (context === "general") {
     return {
       reflection: "I’m following what you’re trying to express.",
@@ -211,7 +234,6 @@ function buildFallbackResponse(options) {
       micro_step: "Pick one small part to focus on first."
     };
   }
-
   return {
     reflection: "I may be missing part of your intent here.",
     question: "What’s the part you want me to focus on most?",
@@ -224,20 +246,16 @@ function buildMemoryUpdate(options) {
   const safety = options && options.safety ? options.safety : {};
   const message = options && options.message ? String(options.message) : "";
   const memory = options && options.memory && typeof options.memory === "object" ? options.memory : {};
-
   const preview = buildPreview(message);
   const lastTopic = normalizeText(memory.lastTopic || memory.last_topic || "");
   const lastContext = normalizeText(context);
   const lastSafetyFlag = normalizeText((safety && safety.flag) || "none");
-
   const lastSignalCodes = Array.isArray(memory.lastSignalCodes)
     ? memory.lastSignalCodes.slice(0, 30)
     : Array.isArray(memory.last_signal_codes)
       ? memory.last_signal_codes.slice(0, 30)
       : [];
-
   const hesitation = !!(memory.hesitationSignal || memory.hesitation_signal);
-
   return {
     last_topic: lastTopic,
     last_message_preview: preview,
@@ -260,70 +278,49 @@ async function generateResponse(options) {
   const route = safeOptions.route || {};
   const policy = safeOptions.policy || null;
 
-  const fallbackRaw = buildFallbackResponse({ language, context });
-  const fallback = sanitizeHaloResponse(fallbackRaw, language);
-
   const llmAllowedByRoute = typeof route.useLLM === "boolean" ? route.useLLM : true;
   const llmAvailable = isConfigured();
 
+  const emergencyCategories = ["self_harm", "harm_others", "medical_emergency"];
+  const safetyCategory = safety && typeof safety.category === "string" ? safety.category : "none";
+  const isEmergency = emergencyCategories.includes(safetyCategory);
+
   if (!message || !llmAvailable || !llmAllowedByRoute) {
+    const base = isEmergency ? buildEmergencyResponse({ language, safety }) : buildFallbackResponse({ language, context });
+    const cleaned = sanitizeHaloResponse(base, language);
     return {
-      reflection: fallback.reflection,
-      question: fallback.question,
-      micro_step: fallback.micro_step,
+      reflection: cleaned.reflection,
+      question: cleaned.question,
+      micro_step: cleaned.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
       memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-      engine: {
-        source: "fallback",
-        model: "rule-based"
-      }
+      engine: { source: "fallback", model: "rule-based" }
     };
   }
 
   try {
-    const prompt = buildHaloPrompt({
-      message,
-      language,
-      context,
-      safety,
-      memory_snapshot: memory,
-      lastReasoning,
-      route,
-      policy
-    });
-
+    const prompt = buildHaloPrompt({ message, language, context, safety, memory_snapshot: memory, lastReasoning, route, policy });
     const maxTokens =
       typeof route.maxTokens === "number"
         ? route.maxTokens
         : typeof route.max_tokens === "number"
           ? route.max_tokens
           : 256;
-
     const temperature = typeof route.temperature === "number" ? route.temperature : 0.4;
     const model = route.model || process.env.LLM_MODEL || "gpt-4o";
 
-    const llmResult = await callLLM({
-      prompt,
-      model,
-      temperature,
-      maxTokens,
-      responseFormat: { type: "json_object" }
-    });
+    const llmResult = await callLLM({ prompt, model, temperature, maxTokens, responseFormat: { type: "json_object" } });
 
     if (!llmResult || !llmResult.success) {
+      const base = buildFallbackResponse({ language, context });
+      const cleaned = sanitizeHaloResponse(base, language);
       return {
-        reflection: fallback.reflection,
-        question: fallback.question,
-        micro_step: fallback.micro_step,
+        reflection: cleaned.reflection,
+        question: cleaned.question,
+        micro_step: cleaned.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
         memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-        engine:
-          llmResult && llmResult.engine
-            ? llmResult.engine
-            : {
-                source: "fallback",
-                model: "rule-based"
-              }
+        engine: llmResult && llmResult.engine ? llmResult.engine : { source: "fallback", model: "rule-based" }
       };
     }
 
@@ -348,25 +345,20 @@ async function generateResponse(options) {
     }
 
     if (!parsed) {
+      const base = buildFallbackResponse({ language, context });
+      const cleaned = sanitizeHaloResponse(base, language);
       return {
-        reflection: fallback.reflection,
-        question: fallback.question,
-        micro_step: fallback.micro_step,
+        reflection: cleaned.reflection,
+        question: cleaned.question,
+        micro_step: cleaned.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
         memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-        engine: llmResult.engine || {
-          source: "fallback",
-          model: "rule-based"
-        }
+        engine: llmResult.engine || { source: "fallback", model: "rule-based" }
       };
     }
 
     const cleaned = sanitizeHaloResponse(
-      {
-        reflection: parsed.reflection,
-        question: parsed.question,
-        micro_step: parsed.micro_step
-      },
+      { reflection: parsed.reflection, question: parsed.question, micro_step: parsed.micro_step },
       language
     );
 
@@ -376,22 +368,18 @@ async function generateResponse(options) {
       micro_step: cleaned.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
       memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-      engine: llmResult.engine || {
-        source: "llm",
-        model
-      }
+      engine: llmResult.engine || { source: "llm", model }
     };
   } catch (err) {
+    const base = buildFallbackResponse({ language, context });
+    const cleaned = sanitizeHaloResponse(base, language);
     return {
-      reflection: fallback.reflection,
-      question: fallback.question,
-      micro_step: fallback.micro_step,
+      reflection: cleaned.reflection,
+      question: cleaned.question,
+      micro_step: cleaned.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
       memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-      engine: {
-        source: "fallback",
-        model: "rule-based"
-      }
+      engine: { source: "fallback", model: "rule-based" }
     };
   }
 }
@@ -400,18 +388,11 @@ async function reasoningEngine(arg1, arg2, arg3, arg4) {
   if (arg1 && typeof arg1 === "object" && !Array.isArray(arg1)) {
     return generateResponse(arg1);
   }
-
   const message = arg1 || "";
   const context = typeof arg2 === "string" ? arg2 : "general";
   const language = typeof arg3 === "string" ? arg3 : "en";
   const safety = arg4 && typeof arg4 === "object" ? arg4 : {};
-
-  return generateResponse({
-    message,
-    context,
-    language,
-    safety
-  });
+  return generateResponse({ message, context, language, safety });
 }
 
 module.exports = reasoningEngine;
