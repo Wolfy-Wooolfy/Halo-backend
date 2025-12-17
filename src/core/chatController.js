@@ -84,6 +84,33 @@ function debugLog(label, value) {
   }
 }
 
+function clampNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function normalizePolicyFinal(finalPolicy) {
+  const f = finalPolicy && typeof finalPolicy === "object" ? finalPolicy : {};
+  return {
+    mode: typeof f.mode === "string" && f.mode ? f.mode : "default",
+    useLLM: typeof f.useLLM === "boolean" ? f.useLLM : true,
+    maxTokens: Number.isFinite(Number(f.maxTokens)) ? Number(f.maxTokens) : 350,
+    temperature: clampNumber(f.temperature, 0, 2, 0.7)
+  };
+}
+
+function normalizePolicy(policy) {
+  const p = policy && typeof policy === "object" ? policy : {};
+  const finalPolicy = normalizePolicyFinal(p.final);
+  return {
+    applied: typeof p.applied === "boolean" ? p.applied : false,
+    rulesTriggered: Array.isArray(p.rulesTriggered) ? p.rulesTriggered : [],
+    changes: Array.isArray(p.changes) ? p.changes : [],
+    final: finalPolicy
+  };
+}
+
 async function handleChat(req, res) {
   try {
     const body = req.body || {};
@@ -112,6 +139,13 @@ async function handleChat(req, res) {
       memory_snapshot: previousMemory
     });
 
+    const rawPolicy =
+      (routeDecision && routeDecision._policy) ||
+      (routeDecision && routeDecision.policy) ||
+      null;
+
+    const policy = normalizePolicy(rawPolicy);
+
     const halo = await reasoningEngine.generateResponse({
       message: normalizedMessage,
       language: languageVariant,
@@ -120,13 +154,14 @@ async function handleChat(req, res) {
       safety: safetyInfo,
       memory: previousMemory || {},
       lastReasoning: previousMemory && previousMemory.lastReasoning ? previousMemory.lastReasoning : null,
-      route: routeDecision
+      route: routeDecision,
+      policy
     });
 
     debugLog("HALO_ENGINE:", halo && halo.engine ? halo.engine : null);
     debugLog("HALO_ROUTE_RAW:", routeDecision && routeDecision._raw ? routeDecision._raw : routeDecision);
     debugLog("HALO_ROUTE_ENFORCED:", routeDecision);
-    debugLog("HALO_POLICY:", routeDecision && routeDecision._policy ? routeDecision._policy : null);
+    debugLog("HALO_POLICY:", policy);
 
     const memoryResult = updateUserMemory({
       userId,
@@ -146,6 +181,8 @@ async function handleChat(req, res) {
       micro_step: halo.micro_step,
       safety_flag: halo.safety_flag || safetyInfo.flag,
       engine: halo.engine || { source: "missing", model: "unknown" },
+      routing: routeDecision,
+      policy,
       memory_update: halo.memory_update,
       meta: {
         language: languageInfo,
@@ -156,8 +193,7 @@ async function handleChat(req, res) {
       },
       memory_snapshot: memoryResult.memory,
       memory_delta: memoryResult.delta,
-      previous_memory: previousMemory,
-      routing: routeDecision
+      previous_memory: previousMemory
     });
   } catch (err) {
     console.error("HALO /chat error:", err);
