@@ -89,13 +89,7 @@ Role: Minimal client / playground for interacting with HALO backend API.
 #### src/routes/chat.js  
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/routes/chat.js  
 Role: Primary API entry point.
-Responsible for:
-- Request normalization
-- Language detection
-- Context classification
-- Safety checks
-- Routing decisions
-- Passing orchestration data to core logic
+Responsible for: HTTP request handling and forwarding to core orchestration (chatController).
 
 ---
 
