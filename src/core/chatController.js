@@ -41,7 +41,6 @@ const classifyCtx = getContextClassifierFn();
 
 function resolveLanguageCode(languageInfo) {
   if (!languageInfo) return "en";
-
   if (typeof languageInfo === "string") {
     const lowered = languageInfo.toLowerCase();
     if (lowered === "ar") return "ar";
@@ -50,7 +49,6 @@ function resolveLanguageCode(languageInfo) {
     if (lowered.startsWith("english")) return "en";
     return "en";
   }
-
   const label = String(languageInfo.language || "").toLowerCase();
   if (label === "ar") return "ar";
   if (label.startsWith("arabic")) return "ar";
@@ -107,8 +105,8 @@ async function handleChat(req, res) {
     const body = req.body || {};
     const userId = body.user_id || "anonymous";
     const rawMessage = body.message || "";
-
     const normalizedMessage = normalize(rawMessage);
+
     const languageInfo = detectLang(normalizedMessage);
     const rawContextInfo = classifyCtx(normalizedMessage);
     const safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
@@ -166,28 +164,35 @@ async function handleChat(req, res) {
       reasoning: halo
     });
 
-    return res.status(200).json({
-      ok: true,
-      user_id: userId,
-      reflection: halo.reflection,
-      question: halo.question,
-      micro_step: halo.micro_step,
-      safety_flag: halo.safety_flag || safetyInfo.flag,
-      engine: halo.engine || { source: "missing", model: "unknown" },
-      routing: enforcedRoute,
-      policy,
-      memory_update: halo.memory_update,
-      meta: {
-        language: languageInfo,
-        language_variant_used: languageVariant,
-        context_raw: rawContextInfo,
-        context_halo: haloContext,
-        safety: safetyInfo
-      },
-      memory_snapshot: memoryResult.memory,
-      memory_delta: memoryResult.delta,
-      previous_memory: previousMemory
-    });
+    return (function () {
+      const responseBody = {
+        ok: true,
+        user_id: userId,
+        reflection: halo.reflection,
+        question: halo.question,
+        micro_step: halo.micro_step,
+        safety_flag: halo.safety_flag || safetyInfo.flag,
+        engine: halo.engine || { source: "missing", model: "unknown" },
+        routing: enforcedRoute,
+        policy,
+        memory_update: halo.memory_update,
+        meta: {
+          language: languageInfo,
+          language_variant_used: languageVariant,
+          context_raw: rawContextInfo,
+          context_halo: haloContext,
+          safety: safetyInfo
+        }
+      };
+
+      if (process.env.HALO_DEBUG === "1") {
+        responseBody.memory_snapshot = memoryResult.memory;
+        responseBody.memory_delta = memoryResult.delta;
+        responseBody.previous_memory = previousMemory;
+      }
+
+      return res.status(200).json(responseBody);
+    })();
   } catch (err) {
     console.error("HALO /chat error:", err);
     return res.status(500).json({ ok: false, error: "internal_error" });
