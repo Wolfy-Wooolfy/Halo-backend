@@ -203,6 +203,13 @@ Guarantees response shape stability and backward compatibility.
 
 ---
 
+### src/tests/safety.emergency.test.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/refs/heads/main/src/tests/safety.emergency.test.js
+Role: Emergency safety contract test ensuring hard NO-LLM override for critical cases (self-harm, harm to others, medical emergencies).
+Validates that policy enforcement disables LLM usage, returns deterministic emergency responses, and preserves API contract stability.
+
+---
+
 ## 5) HALO Documents Map  
 ### (RAW – Authoritative Concept, Rules & Governance)
 
