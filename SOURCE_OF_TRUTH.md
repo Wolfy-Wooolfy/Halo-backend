@@ -346,6 +346,8 @@ Role: User archetypes and behavioral patterns for design and reasoning alignment
 4) Any change must be incremental, justified, and based on exact existing content.
 5) Assistant returns the FULL file content after modification.
 6) Khaled commits and logs the change.
+7) Mandatory Progress Log Update: Every code change or merged fix MUST be logged in HALO – Build Progress Log (Live).md in the Halo-Documents repo before the work is considered “done”.
+8) The assistant must explicitly confirm in chat: “LOG UPDATED: HALO – Build Progress Log (Live).md” after providing the new entry text.
 
 ---
 
