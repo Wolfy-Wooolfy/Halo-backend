@@ -223,10 +223,10 @@ Role: Defines document ownership, precedence, and conflict-resolution order.
 
 ---
 
-### 5.2 Documents (All Must Be Listed)
+### 5.2 Documents
 
 #### HALO – Memory System — Growth + Semantic Engine
-RAW: [(TO BE ADDED)](https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/refs/heads/main/HALO%20-%20Memory%20System%20%E2%80%94%20Growth%20%2B%20Semantic%20Engine.md)
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/refs/heads/main/HALO%20-%20Memory%20System%20%E2%80%94%20Growth%20%2B%20Semantic%20Engine.md
 Role: Defines memory growth philosophy, semantic expansion rules, and how user memory evolves over time.
 
 ---
