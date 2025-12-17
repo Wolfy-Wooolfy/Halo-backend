@@ -226,7 +226,7 @@ Role: Defines document ownership, precedence, and conflict-resolution order.
 ### 5.2 Documents (All Must Be Listed)
 
 #### HALO – Memory System — Growth + Semantic Engine
-RAW: (TO BE ADDED)
+RAW: [(TO BE ADDED)](https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/refs/heads/main/HALO%20-%20Memory%20System%20%E2%80%94%20Growth%20%2B%20Semantic%20Engine.md)
 Role: Defines memory growth philosophy, semantic expansion rules, and how user memory evolves over time.
 
 ---
@@ -342,21 +342,6 @@ Role: Detailed UX flow, screens, and interaction transitions.
 #### HALO – User Personas Profiles
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20User%20Personas%20Profiles.md  
 Role: User archetypes and behavioral patterns for design and reasoning alignment.
-
----
-
-### HALO – Memory System — Growth + Semantic Engine
-RAW:  
-https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/refs/heads/main/HALO%20-%20Memory%20System%20%E2%80%94%20Growth%20%2B%20Semantic%20Engine.md
-
-This document is **fully authoritative** and defines:
-
-- What HALO may remember
-- What HALO must NEVER store
-- Semantic-only memory rules
-- Growth stages of memory
-- Emotional and behavioral pattern encoding
-- Long-term cognitive safety constraints
 
 ---
 
