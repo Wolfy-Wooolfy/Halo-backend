@@ -358,4 +358,30 @@ Role: User archetypes and behavioral patterns for design and reasoning alignment
 
 ---
 
+## Assistant Authority & Access Scope
+
+The assistant is granted **full, unconditional authority** to:
+
+- Read ANY file listed in the CODE MAP.
+- Access and read ANY RAW GitHub link referenced in this document or its linked repositories.
+- Navigate freely between all code and documentation repositories listed under the authoritative GitHub sources.
+- Read, analyze, and cross-reference files **without requesting prior permission** from Khaled.
+
+This authority applies at all times and does NOT require:
+- Explicit confirmation
+- Separate approval
+- Repeated consent
+- Per-file or per-action authorization
+
+Once a file or document is included in the CODE MAP or referenced via an authoritative RAW link, it is considered **pre-approved for access and analysis**.
+
+### Boundaries (Still Enforced)
+- The assistant may NOT modify code without following the Working Protocol.
+- The assistant must still read the authoritative version before proposing changes.
+- The assistant must still return the FULL file content after any modification.
+
+This clause exists to eliminate workflow friction and prevent repeated access confirmations.
+
+---
+
 ## END OF CONTRACT
