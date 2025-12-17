@@ -100,22 +100,74 @@ function normalizePolicy(policy) {
   };
 }
 
+function getDebugToken(req, body) {
+  const headerToken = (req && req.headers && (req.headers["x-halo-debug-token"] || req.headers["X-Halo-Debug-Token"])) || "";
+  const bodyToken = body && body.debug_token ? body.debug_token : "";
+  return String(bodyToken || headerToken || "");
+}
+
+function shouldExposeDebug(req, body) {
+  if (process.env.HALO_DEBUG !== "1") return false;
+  const required = String(process.env.HALO_DEBUG_TOKEN || "").trim();
+  if (!required) return true;
+  const provided = getDebugToken(req, body);
+  return provided === required;
+}
+
+function buildInternalErrorFallback(langCode) {
+  const isAr = langCode === "ar";
+  return {
+    reflection: isAr ? "واضح إن في مشكلة تقنية حصلت دلوقتي، بس خلّينا ما نخليش ده يوقفك." : "Looks like a technical issue happened, but let’s not let it stop you.",
+    question: isAr ? "تقدر تقولّي بجملة واحدة: إيه أهم حاجة عايز تمشي فيها خطوة صغيرة دلوقتي؟" : "In one sentence: what’s the single thing you want to take a tiny step on right now?",
+    micro_step: isAr ? "اكتب سطر واحد يصف المشكلة/الهدف، من غير تفاصيل." : "Write one line describing the goal/problem—no extra details.",
+    safety_flag: "none",
+    memory_update: {
+      last_topic: "",
+      last_message_preview: "",
+      last_safety_flag: "none",
+      mood_delta: "",
+      hesitation_signal: false,
+      last_context: "general",
+      last_signal_codes: []
+    },
+    engine: { source: "error_fallback", model: "none" }
+  };
+}
+
 async function handleChat(req, res) {
+  let userId = "anonymous";
+  let rawMessage = "";
+  let normalizedMessage = "";
+  let languageInfo = { language: "mixed", confidence: 0 };
+  let rawContextInfo = { category: "low_stress", isHighStress: false, messageLength: 0 };
+  let safetyInfo = { isHighRisk: false, category: "none", level: "low", flag: "none" };
+  let langCode = "en";
+  let languageVariant = "en";
+  let haloContext = "general";
+  let previousMemory = {};
+  let enforcedRoute = { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, reason: "default_fallback" };
+  let policy = {
+    applied: true,
+    rulesTriggered: ["internal_error_fallback"],
+    changes: ["force_templates"],
+    final: { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, model: null }
+  };
+
   try {
     const body = req.body || {};
-    const userId = body.user_id || "anonymous";
-    const rawMessage = body.message || "";
-    const normalizedMessage = normalize(rawMessage);
+    userId = body.user_id || "anonymous";
+    rawMessage = body.message || "";
+    normalizedMessage = normalize(rawMessage);
 
-    const languageInfo = detectLang(normalizedMessage);
-    const rawContextInfo = classifyCtx(normalizedMessage);
-    const safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
+    languageInfo = detectLang(normalizedMessage);
+    rawContextInfo = classifyCtx(normalizedMessage);
+    safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
 
-    const langCode = resolveLanguageCode(languageInfo);
-    const languageVariant = extractLanguageVariant(languageInfo);
-    const haloContext = mapContextForHalo(rawContextInfo.category);
+    langCode = resolveLanguageCode(languageInfo);
+    languageVariant = extractLanguageVariant(languageInfo);
+    haloContext = mapContextForHalo(rawContextInfo.category);
 
-    const previousMemory = getUserMemory(userId);
+    previousMemory = getUserMemory(userId);
 
     const routeDecision = decideRoute({
       normalizedMessage,
@@ -134,8 +186,8 @@ async function handleChat(req, res) {
       context_halo: haloContext
     });
 
-    const enforcedRoute = evaluated && evaluated.route ? evaluated.route : routeDecision;
-    const policy = normalizePolicy(evaluated && evaluated.policy ? evaluated.policy : null);
+    enforcedRoute = evaluated && evaluated.route ? evaluated.route : routeDecision;
+    policy = normalizePolicy(evaluated && evaluated.policy ? evaluated.policy : null);
 
     const halo = await reasoningEngine.generateResponse({
       message: normalizedMessage,
@@ -150,7 +202,6 @@ async function handleChat(req, res) {
     });
 
     debugLog("HALO_ENGINE:", halo && halo.engine ? halo.engine : null);
-    debugLog("HALO_ROUTE_DECISION:", routeDecision);
     debugLog("HALO_ROUTE_ENFORCED:", enforcedRoute);
     debugLog("HALO_POLICY:", policy);
 
@@ -164,38 +215,66 @@ async function handleChat(req, res) {
       reasoning: halo
     });
 
-    return (function () {
-      const responseBody = {
-        ok: true,
-        user_id: userId,
-        reflection: halo.reflection,
-        question: halo.question,
-        micro_step: halo.micro_step,
-        safety_flag: halo.safety_flag || safetyInfo.flag,
-        engine: halo.engine || { source: "missing", model: "unknown" },
-        routing: enforcedRoute,
-        policy,
-        memory_update: halo.memory_update,
-        meta: {
-          language: languageInfo,
-          language_variant_used: languageVariant,
-          context_raw: rawContextInfo,
-          context_halo: haloContext,
-          safety: safetyInfo
-        }
-      };
-
-      if (process.env.HALO_DEBUG === "1") {
-        responseBody.memory_snapshot = memoryResult.memory;
-        responseBody.memory_delta = memoryResult.delta;
-        responseBody.previous_memory = previousMemory;
+    const responseBody = {
+      ok: true,
+      user_id: userId,
+      reflection: halo.reflection,
+      question: halo.question,
+      micro_step: halo.micro_step,
+      safety_flag: halo.safety_flag || safetyInfo.flag,
+      engine: halo.engine || { source: "missing", model: "unknown" },
+      routing: enforcedRoute,
+      policy,
+      memory_update: halo.memory_update,
+      meta: {
+        language: languageInfo,
+        language_variant_used: languageVariant,
+        context_raw: rawContextInfo,
+        context_halo: haloContext,
+        safety: safetyInfo
       }
+    };
 
-      return res.status(200).json(responseBody);
-    })();
+    if (shouldExposeDebug(req, body)) {
+      responseBody.memory_snapshot = memoryResult.memory;
+      responseBody.memory_delta = memoryResult.delta;
+      responseBody.previous_memory = previousMemory;
+    }
+
+    return res.status(200).json(responseBody);
   } catch (err) {
     console.error("HALO /chat error:", err);
-    return res.status(500).json({ ok: false, error: "internal_error" });
+
+    const body = req.body || {};
+    const fallbackHalo = buildInternalErrorFallback(langCode);
+
+    const responseBody = {
+      ok: false,
+      user_id: userId,
+      reflection: fallbackHalo.reflection,
+      question: fallbackHalo.question,
+      micro_step: fallbackHalo.micro_step,
+      safety_flag: fallbackHalo.safety_flag,
+      engine: fallbackHalo.engine,
+      routing: enforcedRoute && enforcedRoute.mode ? enforcedRoute : { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, reason: "internal_error_fallback" },
+      policy,
+      memory_update: fallbackHalo.memory_update,
+      meta: {
+        language: languageInfo,
+        language_variant_used: languageVariant,
+        context_raw: rawContextInfo,
+        context_halo: haloContext,
+        safety: safetyInfo,
+        error: "internal_error"
+      }
+    };
+
+    if (shouldExposeDebug(req, body)) {
+      responseBody.previous_memory = previousMemory;
+      responseBody.normalized_message = normalizedMessage;
+    }
+
+    return res.status(200).json(responseBody);
   }
 }
 

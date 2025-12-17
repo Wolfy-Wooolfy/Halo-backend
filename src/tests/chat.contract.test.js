@@ -5,10 +5,7 @@ describe("HALO /api/chat Contract Test", () => {
   it("should always return routing, policy, and engine metadata", async () => {
     const response = await request(app)
       .post("/api/chat")
-      .send({
-        user_id: "contract-test-user",
-        message: "حاسس مخنوق"
-      })
+      .send({ user_id: "contract-test-user", message: "حاسس مخنوق" })
       .expect(200);
 
     const body = response.body;
@@ -35,5 +32,33 @@ describe("HALO /api/chat Contract Test", () => {
     expect(typeof body.policy.final.useLLM).toBe("boolean");
     expect(body.policy.final.maxTokens).toBeDefined();
     expect(body.policy.final.temperature).toBeDefined();
+  });
+
+  it("returns contract-safe response on internal engine failure", async () => {
+    const reasoningEngine = require("../engines/reasoningEngine");
+    const originalGenerate = reasoningEngine.generateResponse;
+
+    reasoningEngine.generateResponse = async () => {
+      throw new Error("FORCED_ENGINE_FAILURE");
+    };
+
+    const response = await request(app)
+      .post("/api/chat")
+      .send({ user_id: "test-user", message: "hello" });
+
+    expect(response.status).toBe(200);
+
+    expect(response.body).toHaveProperty("reflection");
+    expect(response.body).toHaveProperty("question");
+    expect(response.body).toHaveProperty("micro_step");
+    expect(response.body).toHaveProperty("routing");
+    expect(response.body).toHaveProperty("policy");
+    expect(response.body).toHaveProperty("engine");
+
+    expect(response.body).not.toHaveProperty("memory_snapshot");
+    expect(response.body).not.toHaveProperty("memory_delta");
+    expect(response.body).not.toHaveProperty("previous_memory");
+
+    reasoningEngine.generateResponse = originalGenerate;
   });
 });
