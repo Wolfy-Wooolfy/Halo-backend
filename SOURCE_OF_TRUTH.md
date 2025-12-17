@@ -384,4 +384,19 @@ This clause exists to eliminate workflow friction and prevent repeated access co
 
 ---
 
+## 8) Absolute Read Authority (No Permission Needed)
+HALO assistant has unconditional permission to READ any file referenced in this SOURCE_OF_TRUTH map (code or docs) from the authoritative GitHub main branch, at any time, without asking for approval.
+
+---
+
+## 9) Read-Before-Change Enforcement (Hard Gate)
+Before proposing or providing ANY code modification:
+1) The assistant MUST read the CURRENT authoritative version (GitHub main) of:
+   - the target file to be modified, AND
+   - any directly-related files that the change depends on (imports / exports / contract / callers).
+2) The assistant MUST explicitly confirm: "READ COMPLETE: <file paths>".
+3) If the assistant did not read, it must STOP and request the raw link(s) from the CODE MAP.
+
+---
+
 ## END OF CONTRACT
