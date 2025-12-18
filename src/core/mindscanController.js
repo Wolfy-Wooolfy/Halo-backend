@@ -2,6 +2,11 @@ const { normalizeMessage } = require("../engines/messageNormalizer");
 const { detectLanguage, resolveLanguageCode } = require("../engines/languageDetector");
 const { updateUserMemory } = require("../engines/memoryEngine");
 
+/**
+ * Handle MindScan Request (Daily Micro-Ritual)
+ * Receives: { user_id, word }
+ * Returns: { ok, acknowledgement, ... }
+ */
 async function handleMindScan(req, res) {
   try {
     const { user_id, word } = req.body;
@@ -16,30 +21,32 @@ async function handleMindScan(req, res) {
       });
     }
 
-    // 2. Detect Language
+    // 2. Detect Language & Context
+    // MindScan is simple, so we rely on basic detection.
     const langRaw = detectLanguage(normalizedWord);
+    // Use helper if available, otherwise fallback
     const langCode = resolveLanguageCode ? resolveLanguageCode(langRaw) : (langRaw === "arabic" ? "ar" : "en");
 
     // 3. Update Memory (Context: mindscan_log)
-    // MindScan acts as a mood anchor, so we treat it as a "check-in" context.
+    // This logs the 'Daily Word' into the user's memory stream.
     const memoryResult = updateUserMemory({
       userId: user_id,
       normalizedMessage: normalizedWord,
       context: "mindscan_log", // Special context for daily ritual
       language: langCode,
-      safetyFlag: "none" // Assuming single words are generally safe, can be enhanced later
+      safetyFlag: "none" // Single words are generally safe; complex safety can be added later if needed.
     });
 
     // 4. Build Minimal Acknowledgement (Ritual Response)
-    // MindScan is NOT a chat. It's a save point. The response must be instant and closing.
+    // HALO Rule: MindScan response must be ONE short word/phrase. No conversation.
     let responseText = "";
     
     if (langCode === "ar") {
-        // Dialect-aware simple acknowledgements
-        const dialects = ["تمام", "وصلت", "سجلتها", "معاك"];
+        // Dialect-aware simple acknowledgements (Mirroring simplicity)
+        const dialects = ["تمام", "وصلت", "سجلتها", "معاك", "فهمتك"];
         responseText = dialects[Math.floor(Math.random() * dialects.length)];
     } else {
-        const responses = ["Got it.", "Noted.", "Saved.", "With you."];
+        const responses = ["Got it.", "Noted.", "Saved.", "With you.", "Understood."];
         responseText = responses[Math.floor(Math.random() * responses.length)];
     }
 
@@ -51,7 +58,7 @@ async function handleMindScan(req, res) {
         type: "mindscan_entry",
         timestamp: new Date().toISOString()
       },
-      memory_delta: memoryResult.delta
+      memory_delta: memoryResult.memory_delta || {}
     });
 
   } catch (error) {
