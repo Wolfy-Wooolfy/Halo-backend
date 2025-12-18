@@ -176,7 +176,6 @@ function decideRoute(options) {
   let reason = "default balanced routing";
 
   // Trust Safety Engine for ALL Critical Categories
-  // Aligns with Policy Engine definition of Critical Risks
   const isExtreme = 
     safety.isHighRisk && 
     (safety.category === "self_harm" || 
@@ -229,12 +228,13 @@ function decideRoute(options) {
       maxTokens = 120;
       temperature = 0.4;
       reason = "markers_detected (stress/topic) → balanced LLM even if message is short";
-    } else if (messageLength > 0 && messageLength <= 30 && !isQuestion) {
+    } else if (messageLength > 0 && messageLength <= 10 && !isQuestion) {
+      // FIX: Lowered threshold from 30 to 10 to catch short but meaningful sentences (e.g. "اتخانقت")
       mode = "fast";
       useLLM = false;
       maxTokens = 60;
       temperature = 0.3;
-      reason = "very_short_general_message (no question) → fast mode without LLM";
+      reason = "very_short_general_message (<=10 chars, no question) → fast mode without LLM";
     } else if (messageLength > 200) {
       mode = "balanced";
       useLLM = true;
