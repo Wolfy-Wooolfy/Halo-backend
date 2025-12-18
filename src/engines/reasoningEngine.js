@@ -2,14 +2,7 @@ const { buildHaloPrompt } = require("./promptBuilder");
 const { callLLM, isConfigured } = require("./llmClient");
 const { resolveLanguageCode } = require("../engines/languageDetector");
 const { normalizeMessage } = require("../engines/messageNormalizer");
-
-// REMOVED: normalizeText, normalizeLanguageFamily (Use shared engines)
-
-function buildPreview(text) {
-  const t = normalizeMessage(text).replace(/\s+/g, " ");
-  if (!t) return "";
-  return t.length > 80 ? t.slice(0, 80) : t;
-}
+const { buildPreview } = require("../utils/helpers");
 
 function stripCodeFences(text) {
   const t = normalizeMessage(text);

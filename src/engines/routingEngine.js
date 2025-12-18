@@ -1,21 +1,15 @@
 const { resolveLanguageCode } = require("./languageDetector");
 const { normalizeMessage } = require("./messageNormalizer");
 
-// REMOVED: normalizeText, isArabicFamily, isEnglishFamily (Centralized logic used instead)
-
 function isExtremeRisk(safety) {
   if (!safety) return false;
   
   // 1. Direct Category Match (Authoritative from SafetyGuard)
-  // SafetyGuard already scans for "suicide", "kill myself", etc. and labels them as "self_harm".
   if (safety.category === "self_harm") return true;
   
   // 2. Explicit Level Match (Future proofing)
   if (typeof safety.level === "string" && safety.level.toLowerCase() === "extreme") return true;
   
-  // REMOVED: Manual keyword scanning (redundant). 
-  // SafetyGuard is the single source of truth for detecting high risk keywords.
-
   return false;
 }
 

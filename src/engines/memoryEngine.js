@@ -1,13 +1,6 @@
 const memoryStore = {};
 const { normalizeMessage } = require("./messageNormalizer");
-
-// REMOVED: normalizeText (Replaced by central messageNormalizer)
-
-function buildPreview(text) {
-  const t = normalizeMessage(text).replace(/\s+/g, " ");
-  if (!t) return "";
-  return t.length > 80 ? t.slice(0, 80) : t;
-}
+const { buildPreview } = require("../utils/helpers");
 
 function buildDefaultMemory(userId) {
   return {

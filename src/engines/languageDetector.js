@@ -1,7 +1,5 @@
 const { normalizeMessage } = require("./messageNormalizer");
 
-// REMOVED: Local normalizeText (Use central messageNormalizer)
-
 function hasArabicChars(text) {
   return /[\u0600-\u06FF]/.test(text);
 }

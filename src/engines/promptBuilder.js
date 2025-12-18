@@ -2,9 +2,6 @@ const { getUserMemorySnapshot } = require("../engines/memoryEngine");
 const { resolveLanguageCode, extractLanguageVariant } = require("../engines/languageDetector");
 const { normalizeMessage } = require("../engines/messageNormalizer");
 
-// REMOVED: normalizeText (Use messageNormalizer)
-// REMOVED: parseLanguageVariant, isArabicBase (Use languageDetector)
-
 function buildDialectStyleInstruction(languageVariant) {
   const v = normalizeMessage(languageVariant).toLowerCase();
   
