@@ -1,8 +1,9 @@
 function isLlmConfigured() {
   const url = process.env.LLM_API_URL;
   const key = process.env.LLM_API_KEY;
-  const model = process.env.LLM_MODEL;
-  return !!(url && key && model);
+  // FIX: Model is optional in llmClient (defaults to gpt-4o), so don't enforce it here.
+  // We only check for URL and Key to determine availability.
+  return !!(url && key);
 }
 
 function normalizeText(s) {
@@ -175,7 +176,7 @@ function decideRoute(options) {
   let temperature = 0.4;
   let reason = "default balanced routing";
 
-  // Check safety from safetyGuard directly (Trust Model)
+  // Trust Safety Engine (No duplicated regex logic)
   const isExtreme = 
     (safety.isHighRisk && safety.category === "self_harm") || 
     safety.level === "extreme";
