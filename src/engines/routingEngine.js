@@ -5,15 +5,17 @@ const { normalizeMessage } = require("./messageNormalizer");
 
 function isExtremeRisk(safety) {
   if (!safety) return false;
+  
+  // 1. Direct Category Match (Authoritative from SafetyGuard)
+  // SafetyGuard already scans for "suicide", "kill myself", etc. and labels them as "self_harm".
   if (safety.category === "self_harm") return true;
+  
+  // 2. Explicit Level Match (Future proofing)
   if (typeof safety.level === "string" && safety.level.toLowerCase() === "extreme") return true;
-  if (Array.isArray(safety.matchedKeywords)) {
-    const joined = safety.matchedKeywords.join(" ").toLowerCase();
-    if (joined.includes("suicide")) return true;
-    if (joined.includes("kill myself")) return true;
-    if (joined.includes("انتحار")) return true;
-    if (joined.includes("أنتحر")) return true;
-  }
+  
+  // REMOVED: Manual keyword scanning (redundant). 
+  // SafetyGuard is the single source of truth for detecting high risk keywords.
+
   return false;
 }
 
