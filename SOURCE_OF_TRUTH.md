@@ -89,8 +89,8 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/route
 
 ### 4.4 Core Layer
 
-#### src/core/app.js
-RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/core/app.js
+#### src/core/mindscanController.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/core/mindscanController.js
 
 ---
 
@@ -126,11 +126,6 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engin
 
 ---
 
-#### dialectEngine.js
-RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/dialectEngine.js
-
----
-
 #### languageDetector.js
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/languageDetector.js
 
@@ -148,16 +143,6 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engin
 
 #### safetyGuard.js
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/safetyGuard.js
-
----
-
-#### memoryExtractor.js
-RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/memoryExtractor.js
-
----
-
-#### memorySignalApplier.js
-RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/memorySignalApplier.js
 
 ---
 
