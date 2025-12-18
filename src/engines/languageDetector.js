@@ -1,6 +1,6 @@
-function normalizeText(s) {
-  return String(s || "").trim();
-}
+const { normalizeMessage } = require("./messageNormalizer");
+
+// REMOVED: Local normalizeText (Use central messageNormalizer)
 
 function hasArabicChars(text) {
   return /[\u0600-\u06FF]/.test(text);
@@ -19,7 +19,7 @@ function countMatches(text, patterns) {
 }
 
 function detectArabicVariant(t) {
-  const text = normalizeText(t).toLowerCase();
+  const text = normalizeMessage(t).toLowerCase();
   if (!text) return { language: "arabic", confidence: 0.6 };
 
   const egypt = [
@@ -134,7 +134,7 @@ function detectArabicVariant(t) {
 }
 
 function detectEnglishVariant(t) {
-  const text = normalizeText(t);
+  const text = normalizeMessage(t);
   if (!text) return { language: "english", confidence: 0.6 };
 
   const lower = text.toLowerCase();
@@ -217,7 +217,7 @@ function detectLanguage(text) {
     return { language: "unknown", confidence: 0 };
   }
 
-  const t = normalizeText(text);
+  const t = normalizeMessage(text);
   if (!t) {
     return { language: "unknown", confidence: 0 };
   }

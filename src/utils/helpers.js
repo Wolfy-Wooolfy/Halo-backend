@@ -1,5 +1,9 @@
+const { normalizeMessage } = require("../engines/messageNormalizer");
+
+// USE CENTRAL LOGIC: Wrapper around the authoritative messageNormalizer
+// This ensures PII scrubbing (Safety) applies even to utility calls.
 function normalizeText(s) {
-  return String(s || "").trim();
+  return normalizeMessage(s);
 }
 
 function asArray(val) {
@@ -8,7 +12,8 @@ function asArray(val) {
 }
 
 function buildPreview(text) {
-  const t = normalizeText(text).replace(/\s+/g, " ");
+  // normalizeMessage handles trimming and spacing
+  const t = normalizeText(text);
   if (!t) return "";
   return t.length > 80 ? t.slice(0, 80) : t;
 }
