@@ -169,6 +169,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/tests
 
 ---
 
+#### src/tests/mindscan.contract.test.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/tests/mindscan.contract.test.js
+
+---
+
 ### 4.7 Local Runtime Config (Non-GitHub, Runtime-Authoritative)
 
 > This file is typically **NOT committed** to GitHub for security, but it is **runtime-authoritative** for local execution.
