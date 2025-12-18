@@ -1,15 +1,24 @@
 const { buildHaloPrompt } = require("./promptBuilder");
 const { callLLM, isConfigured } = require("./llmClient");
-const { normalizeText, buildPreview } = require("../utils/helpers");
+const { resolveLanguageCode } = require("../engines/languageDetector");
+const { normalizeMessage } = require("../engines/messageNormalizer");
+
+// REMOVED: normalizeText, normalizeLanguageFamily (Use shared engines)
+
+function buildPreview(text) {
+  const t = normalizeMessage(text).replace(/\s+/g, " ");
+  if (!t) return "";
+  return t.length > 80 ? t.slice(0, 80) : t;
+}
 
 function stripCodeFences(text) {
-  const t = normalizeText(text);
+  const t = normalizeMessage(text);
   if (!t) return "";
   return t.replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
 }
 
 function extractFirstJsonObject(text) {
-  const t = normalizeText(text);
+  const t = normalizeMessage(text);
   if (!t) return null;
   const start = t.indexOf("{");
   const end = t.lastIndexOf("}");
@@ -37,9 +46,9 @@ function safeParseJson(text) {
 
 function coerceHaloJson(obj) {
   if (!obj || typeof obj !== "object") return null;
-  const reflection = normalizeText(obj.reflection);
-  const question = normalizeText(obj.question);
-  const micro = normalizeText(obj.micro_step) || normalizeText(obj.microStep) || normalizeText(obj.microstep);
+  const reflection = normalizeMessage(obj.reflection);
+  const question = normalizeMessage(obj.question);
+  const micro = normalizeMessage(obj.micro_step) || normalizeMessage(obj.microStep) || normalizeMessage(obj.microstep);
   if (!reflection || !question) return null;
   return { reflection, question, micro_step: micro || "" };
 }
@@ -65,20 +74,8 @@ function extractHaloLinesFromLLMText(text) {
   return { reflection, question, micro_step: microStep };
 }
 
-function normalizeLanguageFamily(language) {
-  const v = String(language || "").toLowerCase().trim();
-  if (!v) return "en";
-  if (v === "ar") return "ar";
-  if (v.startsWith("ar-")) return "ar";
-  if (v.includes("arabic")) return "ar";
-  if (v === "en") return "en";
-  if (v.startsWith("en-")) return "en";
-  if (v.includes("english")) return "en";
-  return "en";
-}
-
 function sanitizeEgyptianArabic(text) {
-  const t = normalizeText(text);
+  const t = normalizeMessage(text);
   if (!t) return "";
   return t
     .replace(/مضايقني/g, "مقلقني")
@@ -96,12 +93,14 @@ function sanitizeEgyptianArabic(text) {
 
 function sanitizeHaloResponse(obj, language) {
   if (!obj || typeof obj !== "object") return obj;
-  const languageFamily = normalizeLanguageFamily(language);
+  // Use Central Engine
+  const languageFamily = resolveLanguageCode(language);
+  
   if (languageFamily !== "ar") {
     return {
-      reflection: normalizeText(obj.reflection),
-      question: normalizeText(obj.question),
-      micro_step: normalizeText(obj.micro_step)
+      reflection: normalizeMessage(obj.reflection),
+      question: normalizeMessage(obj.question),
+      micro_step: normalizeMessage(obj.micro_step)
     };
   }
   return {
@@ -113,7 +112,7 @@ function sanitizeHaloResponse(obj, language) {
 
 function buildEmergencyResponse(options) {
   const languageRaw = options && options.language ? String(options.language) : "en";
-  const languageFamily = normalizeLanguageFamily(languageRaw);
+  const languageFamily = resolveLanguageCode(languageRaw);
   const safety = options && options.safety ? options.safety : {};
   const category = safety && typeof safety.category === "string" ? safety.category : "none";
 
@@ -176,7 +175,7 @@ function buildEmergencyResponse(options) {
 
 function buildFallbackResponse(options) {
   const languageRaw = options && options.language ? String(options.language) : "en";
-  const languageFamily = normalizeLanguageFamily(languageRaw);
+  const languageFamily = resolveLanguageCode(languageRaw);
   const context = options && options.context ? String(options.context) : "general";
 
   if (languageFamily === "ar") {
@@ -238,9 +237,9 @@ function buildMemoryUpdate(options) {
   const message = options && options.message ? String(options.message) : "";
   const memory = options && options.memory && typeof options.memory === "object" ? options.memory : {};
   const preview = buildPreview(message);
-  const lastTopic = normalizeText(memory.lastTopic || memory.last_topic || "");
-  const lastContext = normalizeText(context);
-  const lastSafetyFlag = normalizeText((safety && safety.flag) || "none");
+  const lastTopic = normalizeMessage(memory.lastTopic || memory.last_topic || "");
+  const lastContext = normalizeMessage(context);
+  const lastSafetyFlag = normalizeMessage((safety && safety.flag) || "none");
   const lastSignalCodes = Array.isArray(memory.lastSignalCodes)
     ? memory.lastSignalCodes.slice(0, 30)
     : Array.isArray(memory.last_signal_codes)

@@ -1,47 +1,19 @@
 const { getUserMemorySnapshot } = require("../engines/memoryEngine");
-const { normalizeText } = require("../utils/helpers");
+const { resolveLanguageCode, extractLanguageVariant } = require("../engines/languageDetector");
+const { normalizeMessage } = require("../engines/messageNormalizer");
 
-function parseLanguageVariant(language) {
-  const raw = normalizeText(language).toLowerCase();
-  if (!raw) {
-    return { base: "en", variant: "en", raw: "en" };
-  }
-
-  if (raw === "ar" || raw.startsWith("arabic")) {
-    const variant = raw === "ar" || raw === "arabic" ? "arabic" : raw;
-    return { base: "ar", variant, raw };
-  }
-
-  if (raw === "en" || raw.startsWith("english")) {
-    const variant = raw === "en" || raw === "english" ? "english" : raw;
-    return { base: "en", variant, raw };
-  }
-
-  if (raw.includes("-")) {
-    const base = raw.split("-")[0];
-    return { base, variant: raw, raw };
-  }
-
-  return { base: raw, variant: raw, raw };
-}
-
-function isArabicBase(language) {
-  const info = parseLanguageVariant(language);
-  if (info.base === "ar") return true;
-  if (info.variant.startsWith("arabic")) return true;
-  if (info.raw === "ar") return true;
-  return false;
-}
+// REMOVED: normalizeText (Use messageNormalizer)
+// REMOVED: parseLanguageVariant, isArabicBase (Use languageDetector)
 
 function buildDialectStyleInstruction(languageVariant) {
-  const v = normalizeText(languageVariant).toLowerCase();
+  const v = normalizeMessage(languageVariant).toLowerCase();
   
-  // Base detection logic
+  // Base detection logic using the variant string directly
   const isArabic = v === "ar" || v.startsWith("arabic") || v.startsWith("ar-");
   const isEnglish = v === "en" || v.startsWith("english") || v.startsWith("en-");
 
   if (isArabic) {
-    // 1. Explicit Dialect Overrides (if detected upstream)
+    // 1. Explicit Dialect Overrides
     if (v.includes("eg") || v.includes("egypt")) {
       return "تعليمات اللهجة (صارمة): تكلم مصري عامي صميم (Egyptian Dialect) بنفس روح وأسلوب المستخدم. تجنب الفصحى تماماً إلا للضرورة القصوى. خليك تلقائي وبسيط.";
     }
@@ -82,9 +54,12 @@ function buildDialectStyleInstruction(languageVariant) {
 }
 
 function buildSystemDirective(language) {
-  const isArabic = isArabicBase(language);
-  const langInfo = parseLanguageVariant(language);
-  const style = buildDialectStyleInstruction(langInfo.variant);
+  // Use Central Engine to check for Arabic family
+  const isArabic = resolveLanguageCode(language) === "ar";
+  
+  // Use Central Engine to get variant string
+  const variant = extractLanguageVariant(language);
+  const style = buildDialectStyleInstruction(variant);
 
   if (isArabic) {
     return [
@@ -110,7 +85,7 @@ function buildSystemDirective(language) {
 }
 
 function buildBehaviorLayer(language) {
-  const isArabic = isArabicBase(language);
+  const isArabic = resolveLanguageCode(language) === "ar";
 
   if (isArabic) {
     return [
@@ -132,7 +107,7 @@ function buildBehaviorLayer(language) {
 }
 
 function buildSafetyLayer(safety, context, language) {
-  const isArabic = isArabicBase(language);
+  const isArabic = resolveLanguageCode(language) === "ar";
   const flag = safety && safety.flag ? safety.flag : "none";
   const isHighRisk = safety && safety.isHighRisk;
 
@@ -190,7 +165,7 @@ function buildSafetyLayer(safety, context, language) {
 }
 
 function buildPolicyLayer(policy, route, language) {
-  const isArabic = isArabicBase(language);
+  const isArabic = resolveLanguageCode(language) === "ar";
   const p = policy && typeof policy === "object" ? policy : null;
   const r = route && typeof route === "object" ? route : null;
 
@@ -242,7 +217,7 @@ function buildPolicyLayer(policy, route, language) {
 }
 
 function buildMemorySummaryFromSnapshot(memory, language) {
-  const isArabic = isArabicBase(language);
+  const isArabic = resolveLanguageCode(language) === "ar";
 
   if (!memory) {
     if (isArabic) {
@@ -278,7 +253,7 @@ function buildMemorySummaryFromSnapshot(memory, language) {
 }
 
 function buildTaskSection(language) {
-  const isArabic = isArabicBase(language);
+  const isArabic = resolveLanguageCode(language) === "ar";
 
   if (isArabic) {
     return [
@@ -302,7 +277,7 @@ function buildTaskSection(language) {
 }
 
 function buildOutputFormatSection(language) {
-  const isArabic = isArabicBase(language);
+  const isArabic = resolveLanguageCode(language) === "ar";
 
   if (isArabic) {
     return [
@@ -325,7 +300,7 @@ function buildOutputFormatSection(language) {
 
 function buildUserMessageBlock(message, language) {
   const safeMessage = typeof message === "string" ? message : "";
-  const isArabic = isArabicBase(language);
+  const isArabic = resolveLanguageCode(language) === "ar";
   if (isArabic) return 'رسالة المستخدم الأصلية (لاحظ اللهجة جيداً):\n"' + safeMessage + '"';
   return 'User message (Note the dialect/style):\n"' + safeMessage + '"';
 }
