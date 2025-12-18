@@ -184,6 +184,7 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/utils
 ### 4.8 Local Runtime Config (Non-GitHub, Runtime-Authoritative)
 
 > This file is typically **NOT committed** to GitHub for security, but it is **runtime-authoritative** for local execution.
+> **Local Environment:** The developer uses **Windows**. All provided commands MUST be Windows-CMD compatible (double-quotes for JSON, no single-quotes).
 
 #### .env (repo root)
 Expected content (LLM_API_KEY intentionally redacted in this document):

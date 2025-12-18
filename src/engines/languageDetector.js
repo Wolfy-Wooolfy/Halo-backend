@@ -242,24 +242,31 @@ function detectLanguage(text) {
 
 function resolveLanguageCode(languageInfo) {
   if (!languageInfo) return "en";
-  
-  // If string (legacy or direct code passed)
   if (typeof languageInfo === "string") {
     const lowered = languageInfo.toLowerCase();
     if (lowered === "ar") return "ar";
     if (lowered.startsWith("arabic")) return "ar";
+    if (lowered === "en") return "en";
+    if (lowered.startsWith("english")) return "en";
     return "en";
   }
-
-  // If object { language: "...", confidence: ... }
   const label = String(languageInfo.language || "").toLowerCase();
   if (label === "ar") return "ar";
   if (label.startsWith("arabic")) return "ar";
-  
+  if (label === "en") return "en";
+  if (label.startsWith("english")) return "en";
+  return "en";
+}
+
+function extractLanguageVariant(languageInfo) {
+  if (!languageInfo) return "en";
+  if (typeof languageInfo === "string") return languageInfo;
+  if (languageInfo && typeof languageInfo.language === "string") return languageInfo.language;
   return "en";
 }
 
 module.exports = {
   detectLanguage,
-  resolveLanguageCode
+  resolveLanguageCode,
+  extractLanguageVariant
 };

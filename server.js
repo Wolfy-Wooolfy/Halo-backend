@@ -18,18 +18,26 @@ app.use(express.json());
 const chatRouter = require("./src/routes/chat");
 const mindscanRouter = require("./src/routes/mindscan");
 
-// Mounting Routes correctly to avoid duplication
-// chatRouter defines '/chat', so mounting at '/api' results in '/api/chat'
+// Use explicit mounting paths
+// chatRouter defines router.post("/chat", ...) internally, so we mount at /api
+// Result: POST /api/chat
 app.use("/api", chatRouter);
 
-// mindscanRouter defines '/', so mounting at '/api/mindscan' results in '/api/mindscan'
+// mindscanRouter defines router.post("/", ...) internally, so we mount at /api/mindscan
+// Result: POST /api/mindscan
 app.use("/api/mindscan", mindscanRouter);
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+  return res.status(200).json({
+    ok: true,
+    status: "up"
+  });
 });
 
-app.listen(PORT, () => {
-  console.log(`HALO Backend running on port ${PORT}`);
-  console.log(`Mode: ${process.env.NODE_ENV || "development"}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`HALO backend running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
