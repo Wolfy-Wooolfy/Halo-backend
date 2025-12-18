@@ -43,16 +43,16 @@ function evaluatePolicy(input) {
   let finalMaxTokens = clampNumber(base.maxTokens, 30, 500, 150);
   let finalTemperature = clampNumber(base.temperature, 0, 1, 0.5);
 
+  // Simplified Logic: Rely on safetyGuard flags directly
+  // This removes duplication of keyword checking logic
   const isCriticalNoLLM =
-    safety.category === "self_harm" ||
-    safety.category === "harm_others" ||
-    safety.category === "medical_emergency";
+    safety.isHighRisk &&
+    (safety.category === "self_harm" ||
+     safety.category === "harm_others" ||
+     safety.category === "medical_emergency");
 
-  const isTraumaSensitive =
-    safety.category === "trauma";
-
-  const isPanicAttack =
-    safety.category === "panic_attack";
+  const isPanicAttack = safety.category === "panic_attack";
+  const isTraumaSensitive = safety.category === "trauma";
 
   // 1) CRITICAL SAFETY -> KILL LLM
   if (isCriticalNoLLM || safety.level === "extreme") {
@@ -134,7 +134,7 @@ function evaluatePolicy(input) {
       changes.push({ field: "temperature", from: finalTemperature, to: cappedTemp });
     finalTemperature = Math.min(finalTemperature, cappedTemp);
 
-  // 5) HIGH STRESS / EMOTIONAL DISCOMFORT -> SUPPORTIVE CONTROLLED LLM
+  // 5) HIGH STRESS / EMOTIONAL DISCOMFORT
   } else if (safety.flag === "high_stress" || contextHalo === "emotional_discomfort") {
     rulesTriggered.push("STRESS_CONTROLLED_LLM");
 

@@ -1,17 +1,3 @@
-function isExtremeRisk(safety) {
-  if (!safety) return false;
-  if (safety.category === "self_harm") return true;
-  if (typeof safety.level === "string" && safety.level.toLowerCase() === "extreme") return true;
-  if (Array.isArray(safety.matchedKeywords)) {
-    const joined = safety.matchedKeywords.join(" ").toLowerCase();
-    if (joined.includes("suicide")) return true;
-    if (joined.includes("kill myself")) return true;
-    if (joined.includes("انتحار")) return true;
-    if (joined.includes("أنتحر")) return true;
-  }
-  return false;
-}
-
 function isLlmConfigured() {
   const url = process.env.LLM_API_URL;
   const key = process.env.LLM_API_KEY;
@@ -189,7 +175,12 @@ function decideRoute(options) {
   let temperature = 0.4;
   let reason = "default balanced routing";
 
-  if (isExtremeRisk(safety)) {
+  // Check safety from safetyGuard directly (Trust Model)
+  const isExtreme = 
+    (safety.isHighRisk && safety.category === "self_harm") || 
+    safety.level === "extreme";
+
+  if (isExtreme) {
     return {
       mode: "fast",
       useLLM: false,
