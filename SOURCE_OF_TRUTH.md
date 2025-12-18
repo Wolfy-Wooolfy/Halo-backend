@@ -85,6 +85,12 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/halo-clie
 #### src/routes/chat.js
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/routes/chat.js
 
+
+---
+
+#### src/routes/mindscan.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/routes/mindscan.js
+
 ---
 
 ### 4.4 Core Layer
