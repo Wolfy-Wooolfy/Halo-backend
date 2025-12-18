@@ -2,7 +2,6 @@ function isLlmConfigured() {
   const url = process.env.LLM_API_URL;
   const key = process.env.LLM_API_KEY;
   // FIX: Model is optional in llmClient (defaults to gpt-4o), so don't enforce it here.
-  // We only check for URL and Key to determine availability.
   return !!(url && key);
 }
 
@@ -176,9 +175,13 @@ function decideRoute(options) {
   let temperature = 0.4;
   let reason = "default balanced routing";
 
-  // Trust Safety Engine (No duplicated regex logic)
+  // Trust Safety Engine for ALL Critical Categories
+  // Aligns with Policy Engine definition of Critical Risks
   const isExtreme = 
-    (safety.isHighRisk && safety.category === "self_harm") || 
+    safety.isHighRisk && 
+    (safety.category === "self_harm" || 
+     safety.category === "harm_others" || 
+     safety.category === "medical_emergency") ||
     safety.level === "extreme";
 
   if (isExtreme) {
@@ -187,7 +190,7 @@ function decideRoute(options) {
       useLLM: false,
       maxTokens: 60,
       temperature: 0.1,
-      reason: "extreme_risk → fast mode with templates (no LLM)"
+      reason: "extreme_risk (critical safety) → fast mode with templates (no LLM)"
     };
   }
 
@@ -196,7 +199,7 @@ function decideRoute(options) {
     useLLM = true;
     maxTokens = 100;
     temperature = 0.3;
-    reason = "high_risk (non-extreme) → balanced LLM with tight safety";
+    reason = "high_risk (non-critical) → balanced LLM with tight safety";
   } else if (safety && safety.flag === "high_stress") {
     mode = "balanced";
     useLLM = true;
