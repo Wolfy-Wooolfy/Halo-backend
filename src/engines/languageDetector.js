@@ -1,6 +1,4 @@
-function normalizeText(s) {
-  return String(s || "").trim();
-}
+const { normalizeText } = require("../utils/helpers");
 
 function hasArabicChars(text) {
   return /[\u0600-\u06FF]/.test(text);

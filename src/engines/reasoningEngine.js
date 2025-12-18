@@ -1,15 +1,6 @@
 const { buildHaloPrompt } = require("./promptBuilder");
 const { callLLM, isConfigured } = require("./llmClient");
-
-function normalizeText(s) {
-  return String(s || "").trim();
-}
-
-function buildPreview(text) {
-  const t = normalizeText(text).replace(/\s+/g, " ");
-  if (!t) return "";
-  return t.length > 80 ? t.slice(0, 80) : t;
-}
+const { normalizeText, buildPreview } = require("../utils/helpers");
 
 function stripCodeFences(text) {
   const t = normalizeText(text);

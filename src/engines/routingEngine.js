@@ -1,12 +1,24 @@
+const { normalizeText } = require("../utils/helpers");
+
+function isExtremeRisk(safety) {
+  if (!safety) return false;
+  if (safety.category === "self_harm") return true;
+  if (typeof safety.level === "string" && safety.level.toLowerCase() === "extreme") return true;
+  if (Array.isArray(safety.matchedKeywords)) {
+    const joined = safety.matchedKeywords.join(" ").toLowerCase();
+    if (joined.includes("suicide")) return true;
+    if (joined.includes("kill myself")) return true;
+    if (joined.includes("انتحار")) return true;
+    if (joined.includes("أنتحر")) return true;
+  }
+  return false;
+}
+
 function isLlmConfigured() {
   const url = process.env.LLM_API_URL;
   const key = process.env.LLM_API_KEY;
-  // FIX: Model is optional in llmClient (defaults to gpt-4o), so don't enforce it here.
-  return !!(url && key);
-}
-
-function normalizeText(s) {
-  return String(s || "").trim();
+  const model = process.env.LLM_MODEL;
+  return !!(url && key && model);
 }
 
 function hasAny(text, arr) {
@@ -175,21 +187,13 @@ function decideRoute(options) {
   let temperature = 0.4;
   let reason = "default balanced routing";
 
-  // Trust Safety Engine for ALL Critical Categories
-  const isExtreme = 
-    safety.isHighRisk && 
-    (safety.category === "self_harm" || 
-     safety.category === "harm_others" || 
-     safety.category === "medical_emergency") ||
-    safety.level === "extreme";
-
-  if (isExtreme) {
+  if (isExtremeRisk(safety)) {
     return {
       mode: "fast",
       useLLM: false,
       maxTokens: 60,
       temperature: 0.1,
-      reason: "extreme_risk (critical safety) → fast mode with templates (no LLM)"
+      reason: "extreme_risk → fast mode with templates (no LLM)"
     };
   }
 
@@ -198,7 +202,7 @@ function decideRoute(options) {
     useLLM = true;
     maxTokens = 100;
     temperature = 0.3;
-    reason = "high_risk (non-critical) → balanced LLM with tight safety";
+    reason = "high_risk (non-extreme) → balanced LLM with tight safety";
   } else if (safety && safety.flag === "high_stress") {
     mode = "balanced";
     useLLM = true;
@@ -228,13 +232,12 @@ function decideRoute(options) {
       maxTokens = 120;
       temperature = 0.4;
       reason = "markers_detected (stress/topic) → balanced LLM even if message is short";
-    } else if (messageLength > 0 && messageLength <= 10 && !isQuestion) {
-      // FIX: Lowered threshold from 30 to 10 to catch short but meaningful sentences (e.g. "اتخانقت")
+    } else if (messageLength > 0 && messageLength <= 30 && !isQuestion) {
       mode = "fast";
       useLLM = false;
       maxTokens = 60;
       temperature = 0.3;
-      reason = "very_short_general_message (<=10 chars, no question) → fast mode without LLM";
+      reason = "very_short_general_message (no question) → fast mode without LLM";
     } else if (messageLength > 200) {
       mode = "balanced";
       useLLM = true;

@@ -1,8 +1,5 @@
 const { getUserMemorySnapshot } = require("../engines/memoryEngine");
-
-function normalizeText(s) {
-  return String(s || "").trim();
-}
+const { normalizeText } = require("../utils/helpers");
 
 function parseLanguageVariant(language) {
   const raw = normalizeText(language).toLowerCase();

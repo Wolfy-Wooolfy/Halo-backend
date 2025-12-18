@@ -1,19 +1,11 @@
+const { normalizeText, buildPreview, asArray } = require("../utils/helpers");
+
 const memoryStore = {};
-
-function normalizeText(s) {
-  return String(s || "").trim();
-}
-
-function buildPreview(text) {
-  const t = normalizeText(text).replace(/\s+/g, " ");
-  if (!t) return "";
-  return t.length > 80 ? t.slice(0, 80) : t;
-}
 
 function buildDefaultMemory(userId) {
   return {
     userId: userId || "anonymous",
-    lastMessage: "", // Stores preview only
+    lastMessage: "",
     lastMessagePreview: "",
     lastContext: null,
     lastLanguage: null,
@@ -49,15 +41,9 @@ function getUserMemorySnapshot(userId) {
   return getUserMemory(userId || "anonymous");
 }
 
-function asArray(val) {
-  if (Array.isArray(val)) return val;
-  return [];
-}
-
 function updateUserMemory(payload) {
   const userId = payload.userId || "anonymous";
-  // FIX: Accept payload.message OR payload.normalizedMessage
-  const normalizedMessage = payload.message || payload.normalizedMessage || "";
+  const normalizedMessage = payload.normalizedMessage || "";
   const context = payload.context || "general";
   const language = payload.language || "en";
   const safetyFlag = payload.safetyFlag || "none";
@@ -88,7 +74,7 @@ function updateUserMemory(payload) {
   const updated = {
     ...current,
     lastMessagePreview: preview,
-    lastMessage: preview, // Privacy: Preview only
+    lastMessage: preview,
     lastContext: finalContext,
     lastLanguage: language,
     lastSafetyFlag: finalSafety,
