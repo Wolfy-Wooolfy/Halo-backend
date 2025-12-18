@@ -361,6 +361,7 @@ the assistant MUST:
 4) Any change must be incremental, justified, and based on exact existing content.
 
 5) Assistant returns the FULL file content after modification.
+   **EXCEPTION:** For `HALO – Build Progress Log (Live).md`, the assistant MUST return ONLY the new entry text (Append-Only Mode) to preserve context.
 
 6) Khaled commits and logs the change.
 
@@ -452,6 +453,14 @@ Before proposing or providing ANY code modification:
    - The ONLY allowed case to ask Khaled is:
      - the RAW link is broken / incorrect, or
      - the link does not open (access error / load failure).
+
+---
+
+## 12) Frontend & Deployment Stability Rules (Locked)
+
+- **API Response Contract** is LOCKED from Phase 1 through Phase 4.
+- **Frontend Integration** is NOT to be repeated during Phase 2–4.
+- Any **Intelligence upgrades** must be deployed behind **Feature Flags** only.
 
 ---
 
