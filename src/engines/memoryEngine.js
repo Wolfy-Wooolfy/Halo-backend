@@ -1,6 +1,13 @@
-const { normalizeText, buildPreview, asArray } = require("../utils/helpers");
-
 const memoryStore = {};
+const { normalizeMessage } = require("./messageNormalizer");
+
+// REMOVED: normalizeText (Replaced by central messageNormalizer)
+
+function buildPreview(text) {
+  const t = normalizeMessage(text).replace(/\s+/g, " ");
+  if (!t) return "";
+  return t.length > 80 ? t.slice(0, 80) : t;
+}
 
 function buildDefaultMemory(userId) {
   return {
@@ -41,6 +48,11 @@ function getUserMemorySnapshot(userId) {
   return getUserMemory(userId || "anonymous");
 }
 
+function asArray(val) {
+  if (Array.isArray(val)) return val;
+  return [];
+}
+
 function updateUserMemory(payload) {
   const userId = payload.userId || "anonymous";
   const normalizedMessage = payload.normalizedMessage || "";
@@ -51,10 +63,10 @@ function updateUserMemory(payload) {
   const reasoning = payload.reasoning && typeof payload.reasoning === "object" ? payload.reasoning : {};
   const mu = reasoning.memory_update && typeof reasoning.memory_update === "object" ? reasoning.memory_update : {};
 
-  const muLastTopic = normalizeText(mu.last_topic);
-  const muLastContext = normalizeText(mu.last_context);
-  const muLastSafetyFlag = normalizeText(mu.last_safety_flag);
-  const muPreview = normalizeText(mu.last_message_preview);
+  const muLastTopic = normalizeMessage(mu.last_topic);
+  const muLastContext = normalizeMessage(mu.last_context);
+  const muLastSafetyFlag = normalizeMessage(mu.last_safety_flag);
+  const muPreview = normalizeMessage(mu.last_message_preview);
   const muSignalCodes = asArray(mu.last_signal_codes);
   const muHesitation = !!mu.hesitation_signal;
 
@@ -81,7 +93,7 @@ function updateUserMemory(payload) {
     lastMood: mood,
     lastUpdatedAt: new Date().toISOString(),
     interactionCount: current.interactionCount + 1,
-    lastTopic: muLastTopic ? muLastTopic : normalizeText(current.lastTopic),
+    lastTopic: muLastTopic ? muLastTopic : normalizeMessage(current.lastTopic),
     lastSignalCodes: nextSignalCodes,
     hesitationSignal: muHesitation || !!current.hesitationSignal
   };

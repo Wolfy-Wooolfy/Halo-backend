@@ -1,12 +1,9 @@
+const { normalizeMessage } = require("./messageNormalizer");
+
 function normalizeForClassification(text) {
-  if (!text) {
-    return '';
-  }
-  let t = text;
-  if (typeof t !== 'string') {
-    t = String(t);
-  }
-  return t.toLowerCase();
+  if (!text) return '';
+  // Use central normalizer first, then lowercase for keyword matching
+  return normalizeMessage(text).toLowerCase();
 }
 
 function containsAny(text, keywords) {

@@ -1,4 +1,7 @@
-const { normalizeText } = require("../utils/helpers");
+const { resolveLanguageCode } = require("./languageDetector");
+const { normalizeMessage } = require("./messageNormalizer");
+
+// REMOVED: normalizeText, isArabicFamily, isEnglishFamily (Centralized logic used instead)
 
 function isExtremeRisk(safety) {
   if (!safety) return false;
@@ -22,35 +25,13 @@ function isLlmConfigured() {
 }
 
 function hasAny(text, arr) {
-  const t = normalizeText(text).toLowerCase();
+  const t = normalizeMessage(text).toLowerCase();
   if (!t) return false;
   return arr.some((k) => t.includes(String(k).toLowerCase()));
 }
 
-function isArabicFamily(language) {
-  const lang = String(language || "").toLowerCase();
-  if (!lang) return false;
-  if (lang === "ar") return true;
-  if (lang.startsWith("ar-")) return true;
-  if (lang.startsWith("arabic")) return true;
-  if (lang.includes("arabic")) return true;
-  if (lang.includes("ar")) return true;
-  return false;
-}
-
-function isEnglishFamily(language) {
-  const lang = String(language || "").toLowerCase();
-  if (!lang) return false;
-  if (lang === "en") return true;
-  if (lang.startsWith("en-")) return true;
-  if (lang.startsWith("english")) return true;
-  if (lang.includes("english")) return true;
-  if (lang.includes("en")) return true;
-  return false;
-}
-
 function isQuestionMessage(message, language) {
-  const t = normalizeText(message);
+  const t = normalizeMessage(message);
   if (!t) return false;
 
   if (t.includes("?") || t.includes("؟")) return true;
@@ -93,20 +74,19 @@ function isQuestionMessage(message, language) {
   ];
 
   const lower = t.toLowerCase();
+  const langCode = resolveLanguageCode(language);
 
-  if (isArabicFamily(language)) {
+  if (langCode === "ar") {
     return arStarters.some((w) => t.startsWith(w));
   }
 
-  if (isEnglishFamily(language)) {
-    return enStarters.some((w) => lower.startsWith(w));
-  }
-
-  return false;
+  // Default to English logic for 'en' or others
+  return enStarters.some((w) => lower.startsWith(w));
 }
 
 function hasHesitationOrStressMarkers(message, language) {
-  const t = normalizeText(message);
+  const t = normalizeMessage(message);
+  const langCode = resolveLanguageCode(language);
 
   const arMarkers = [
     "متوتر",
@@ -148,12 +128,13 @@ function hasHesitationOrStressMarkers(message, language) {
     "affecting my work"
   ];
 
-  if (isArabicFamily(language)) return hasAny(t, arMarkers);
+  if (langCode === "ar") return hasAny(t, arMarkers);
   return hasAny(t, enMarkers);
 }
 
 function hasTopicMarkers(message, language) {
-  const t = normalizeText(message);
+  const t = normalizeMessage(message);
+  const langCode = resolveLanguageCode(language);
 
   const workAr = ["شغل", "عمل", "وظيفة", "شركة", "مدير", "مشروع", "تاسك", "كارير", "مأثر على شغلي", "ماثر على شغلي"];
   const relAr = ["زوج", "مراتي", "علاقة", "خطيب", "خطيبة", "أهلي", "صاحب", "صديقة", "فراق", "مشاعر", "بيت"];
@@ -163,7 +144,7 @@ function hasTopicMarkers(message, language) {
   const relEn = ["relationship", "partner", "spouse", "family", "friend", "breakup", "love"];
   const selfEn = ["sleep", "health", "focus", "habit", "anxiety", "stress", "depression"];
 
-  if (isArabicFamily(language)) {
+  if (langCode === "ar") {
     return hasAny(t, workAr) || hasAny(t, relAr) || hasAny(t, selfAr);
   }
 
