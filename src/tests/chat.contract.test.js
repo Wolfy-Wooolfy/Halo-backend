@@ -35,6 +35,9 @@ describe("HALO /api/chat Contract Test", () => {
   });
 
   it("returns contract-safe response on internal engine failure", async () => {
+    // Silence console.error intentionally for this test case
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
     const reasoningEngine = require("../engines/reasoningEngine");
     const originalGenerate = reasoningEngine.generateResponse;
 
@@ -42,23 +45,27 @@ describe("HALO /api/chat Contract Test", () => {
       throw new Error("FORCED_ENGINE_FAILURE");
     };
 
-    const response = await request(app)
-      .post("/api/chat")
-      .send({ user_id: "test-user", message: "hello" });
+    try {
+      const response = await request(app)
+        .post("/api/chat")
+        .send({ user_id: "test-user", message: "hello" });
 
-    expect(response.status).toBe(200);
+      expect(response.status).toBe(200);
 
-    expect(response.body).toHaveProperty("reflection");
-    expect(response.body).toHaveProperty("question");
-    expect(response.body).toHaveProperty("micro_step");
-    expect(response.body).toHaveProperty("routing");
-    expect(response.body).toHaveProperty("policy");
-    expect(response.body).toHaveProperty("engine");
+      expect(response.body).toHaveProperty("reflection");
+      expect(response.body).toHaveProperty("question");
+      expect(response.body).toHaveProperty("micro_step");
+      expect(response.body).toHaveProperty("routing");
+      expect(response.body).toHaveProperty("policy");
+      expect(response.body).toHaveProperty("engine");
 
-    expect(response.body).not.toHaveProperty("memory_snapshot");
-    expect(response.body).not.toHaveProperty("memory_delta");
-    expect(response.body).not.toHaveProperty("previous_memory");
-
-    reasoningEngine.generateResponse = originalGenerate;
+      expect(response.body).not.toHaveProperty("memory_snapshot");
+      expect(response.body).not.toHaveProperty("memory_delta");
+      expect(response.body).not.toHaveProperty("previous_memory");
+    } finally {
+      // Restore original implementation and console
+      reasoningEngine.generateResponse = originalGenerate;
+      consoleSpy.mockRestore();
+    }
   });
 });

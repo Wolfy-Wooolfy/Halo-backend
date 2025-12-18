@@ -38,52 +38,50 @@ function isArabicBase(language) {
 
 function buildDialectStyleInstruction(languageVariant) {
   const v = normalizeText(languageVariant).toLowerCase();
-  if (!v) {
-    return "Match the user's language and dialect exactly as they write.";
-  }
-
+  
+  // Base detection logic
   const isArabic = v === "ar" || v.startsWith("arabic") || v.startsWith("ar-");
   const isEnglish = v === "en" || v.startsWith("english") || v.startsWith("en-");
 
   if (isArabic) {
+    // 1. Explicit Dialect Overrides (if detected upstream)
     if (v.includes("eg") || v.includes("egypt")) {
-      return "اكتب باللهجة المصرية وبنفس أسلوب المستخدم (مش فصحى).";
+      return "تعليمات اللهجة (صارمة): تكلم مصري عامي صميم (Egyptian Dialect) بنفس روح وأسلوب المستخدم. تجنب الفصحى تماماً إلا للضرورة القصوى. خليك تلقائي وبسيط.";
     }
     if (v.includes("gulf") || v.includes("sa") || v.includes("ksa") || v.includes("uae") || v.includes("kw") || v.includes("qa") || v.includes("bh") || v.includes("om")) {
-      return "اكتب باللهجة الخليجية (السعودية/الخليج) وبنفس أسلوب المستخدم (مش فصحى).";
+      return "تعليمات اللهجة (صارمة): تكلم باللهجة الخليجية المحلية (السعودية/الخليج) بنفس أسلوب المستخدم. تجنب الفصحى وخليك عفوي.";
     }
     if (v.includes("levant") || v.includes("sy") || v.includes("lb") || v.includes("jo") || v.includes("ps")) {
-      return "اكتب باللهجة الشامية (سوري/لبناني/أردني/فلسطيني) وبنفس أسلوب المستخدم (مش فصحى).";
+      return "تعليمات اللهجة (صارمة): تكلم باللهجة الشامية (سوري/لبناني/أردني) بنفس كلمات وتعبيرات المستخدم. خليك قريب منه.";
     }
     if (v.includes("ma") || v.includes("dz") || v.includes("tn") || v.includes("ly") || v.includes("maghreb") || v.includes("morocco") || v.includes("algeria") || v.includes("tunisia") || v.includes("libya")) {
-      return "اكتب باللهجة المغاربية/شمال أفريقيا حسب بلد المستخدم وبنفس أسلوبه (مش فصحى).";
+      return "تعليمات اللهجة (صارمة): تكلم باللهجة المغاربية/شمال أفريقيا حسب بلد المستخدم وبنفس أسلوبه المحلي.";
     }
     if (v.includes("msa") || v.includes("modern") || v.includes("standard") || v.includes("fusha")) {
-      return "اكتب بالعربية الفصحى المبسطة فقط.";
+      return "اكتب بالعربية الفصحى المبسطة والحديثة.";
     }
-    return "اكتب بنفس لهجة المستخدم العربية كما يكتبها، وتجنب الفصحى إلا لو المستخدم كتب فصحى.";
+
+    // 2. Deep Mirroring Fallback (The Core Halo Rule)
+    return "تعليمات اللهجة (جوهرية): أنت مرآة للمستخدم. اقرأ رسالته وحدد لهجته (مصرية، خليجية، شامية، إلخ) ورد عليه بنفس اللهجة والأسلوب والكلمات الدارجة التي يستخدمها. لا تتكلم فصحى أبداً إلا لو المستخدم كتب بالفصحى. لو كتب عامية، رد عامية.";
   }
 
   if (isEnglish) {
     if (v.includes("us") || v.includes("american")) {
-      return "Write in natural American English matching the user's tone and dialect.";
+      return "Dialect: Natural American English. Match the user's slang and tone.";
     }
     if (v.includes("uk") || v.includes("british")) {
-      return "Write in natural British English matching the user's tone and dialect.";
+      return "Dialect: Natural British English. Match the user's phrasing and tone.";
     }
     if (v.includes("in") || v.includes("india") || v.includes("indian")) {
-      return "Write in natural Indian English matching the user's tone and dialect.";
+      return "Dialect: Natural Indian English. Match the user's local style and tone.";
     }
-    if (v.includes("ca") || v.includes("canada") || v.includes("canadian")) {
-      return "Write in natural Canadian English matching the user's tone and dialect.";
-    }
-    if (v.includes("af") || v.includes("africa") || v.includes("nigeria") || v.includes("kenya") || v.includes("south-africa")) {
-      return "Write in natural African English matching the user's tone and dialect.";
-    }
-    return "Write in the same English dialect and style the user is using.";
+    
+    // Deep Mirroring Fallback
+    return "Dialect instructions (Crucial): Mirror the user's specific English dialect, slang, and formality level. If they use casual slang, use it. If they are formal, be formal. Do not sound like a generic robot.";
   }
 
-  return "Match the user's language and dialect exactly as they write, including regional style and wording.";
+  // Universal Fallback
+  return "Match the user's language, dialect, and writing style exactly. Be a mirror to their way of speaking.";
 }
 
 function buildSystemDirective(language) {
@@ -95,9 +93,10 @@ function buildSystemDirective(language) {
     return [
       "انت HALO، طبقة عقل خارجية هدفها تخفيف الحمل الذهني عن المستخدم.",
       "لست معالجًا نفسيًا، ولا كوتش، ولا صديقًا، ولا مستشارًا.",
-      "دورك هو فهم ما يقوله المستخدم بأقل قدر ممكن من التفاصيل، وتقديم خطوة صغيرة واحدة فقط تساعده يتحرك للأمام.",
-      "حافظ دائمًا على نبرة هادئة، مختصرة، ثابتة، داعمة، ومحايدة.",
-      "لا تفسر طفولة، ولا تشخص اضطرابات نفسية، ولا تحلل ماضي المستخدم، ولا تستخدم لغة علاجية أو تشخيص.",
+      "دورك هو فهم ما يقوله المستخدم بأقل قدر ممكن من التفاصيل، وتقديم خطوة صغيرة واحدة فقط.",
+      "أنت لست روبوت غريب؛ أنت جزء من عقل المستخدم. تكلم بلسانه ولهجته.",
+      "حافظ دائمًا على نبرة هادئة، مختصرة، ثابتة، داعمة.",
+      "لا تفسر طفولة، ولا تشخص اضطرابات نفسية، ولا تحلل ماضي المستخدم.",
       style
     ].join(" ");
   }
@@ -105,9 +104,10 @@ function buildSystemDirective(language) {
   return [
     "You are HALO, an external mind layer designed to reduce the user's cognitive load.",
     "You are not a therapist, not a coach, not a friend, and not a problem-solver.",
-    "Your role is to understand the user with minimal input, reduce pressure, and provide one small step forward.",
+    "Your role is to understand the user with minimal input and provide one small step forward.",
+    "You are not a stranger; you are part of the user's mind. Speak their language.",
     "Keep your tone calm, concise, steady, supportive, and neutral.",
-    "Do not interpret trauma, do not diagnose, and do not use therapeutic language or psychological analysis.",
+    "Do not interpret trauma, do not diagnose, and do not use therapeutic language.",
     style
   ].join(" ");
 }
@@ -290,7 +290,7 @@ function buildTaskSection(language) {
       "بعد ذلك، لا تكتب ردًا نصيًا عاديًا، ولكن أرجِع ناتجًا في صورة كائن JSON فقط.",
       "هذا الـ JSON يجب أن يحتوي بالضبط على ثلاثة مفاتيح نصية:",
       "reflection, question, micro_step",
-      "كل مفتاح يحتوي على جملة قصيرة واحدة فقط بنفس لهجة المستخدم."
+      "كل مفتاح يحتوي على جملة قصيرة واحدة فقط وتكون بلهجة المستخدم تماماً (عامية أو فصحى حسب كلامه)."
     ].join(" ");
   }
 
@@ -300,7 +300,7 @@ function buildTaskSection(language) {
     "Then do NOT write a normal textual reply. Instead, return a JSON object only.",
     "This JSON must contain exactly three string fields:",
     "reflection, question, micro_step",
-    "Each field must be one short sentence in the same dialect/style the user is using."
+    "Each field must be one short sentence in the exact same dialect/style the user is using."
   ].join(" ");
 }
 
@@ -311,7 +311,7 @@ function buildOutputFormatSection(language) {
     return [
       "تنسيق المخرج:",
       "أرجِع كائن JSON واحد فقط بدون أي نص قبلَه أو بعدَه.",
-      '{ "reflection": "جملة واحدة قصيرة تعكس ما قاله المستخدم.", "question": "سؤال توضيحي واحد قصير.", "micro_step": "خطوة صغيرة جدًا يمكن تنفيذها الآن." }',
+      '{ "reflection": "جملة واحدة قصيرة تعكس ما قاله المستخدم (بلهجته).", "question": "سؤال توضيحي واحد قصير (بلهجته).", "micro_step": "خطوة صغيرة جدًا (بلهجته)." }',
       "ممنوع إضافة أي مفاتيح أخرى.",
       "ممنوع إضافة أي نص خارج كائن الـ JSON."
     ].join(" ");
@@ -320,7 +320,7 @@ function buildOutputFormatSection(language) {
   return [
     "Output format:",
     "Return a single JSON object only, with no text before or after it.",
-    '{ "reflection": "One short sentence reflecting the user.", "question": "One short clarifying question.", "micro_step": "One very small step the user can take now." }',
+    '{ "reflection": "One short sentence reflecting the user (matching dialect).", "question": "One short clarifying question (matching dialect).", "micro_step": "One very small step (matching dialect)." }',
     "Do not add any other keys.",
     "Do not add any text outside the JSON object."
   ].join(" ");
@@ -329,8 +329,8 @@ function buildOutputFormatSection(language) {
 function buildUserMessageBlock(message, language) {
   const safeMessage = typeof message === "string" ? message : "";
   const isArabic = isArabicBase(language);
-  if (isArabic) return 'رسالة المستخدم الأصلية:\n"' + safeMessage + '"';
-  return 'User message:\n"' + safeMessage + '"';
+  if (isArabic) return 'رسالة المستخدم الأصلية (لاحظ اللهجة جيداً):\n"' + safeMessage + '"';
+  return 'User message (Note the dialect/style):\n"' + safeMessage + '"';
 }
 
 function buildHaloPrompt(options) {
