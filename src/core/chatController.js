@@ -1,6 +1,7 @@
 const safetyGuard = require("../engines/safetyGuard");
 const reasoningEngine = require("../engines/reasoningEngine");
-const { getUserMemory, updateUserMemory } = require("../engines/memoryEngine");
+// FIX: Updated to destruct 'getUserMemorySnapshot' instead of 'getUserMemory'
+const { getUserMemorySnapshot, updateUserMemory } = require("../engines/memoryEngine");
 const messageNormalizer = require("../engines/messageNormalizer");
 const languageDetector = require("../engines/languageDetector");
 const contextClassifier = require("../engines/contextClassifier");
@@ -167,7 +168,13 @@ async function handleChat(req, res) {
     languageVariant = extractLanguageVariant(languageInfo);
     haloContext = mapContextForHalo(rawContextInfo.category);
 
-    previousMemory = getUserMemory(userId);
+    // FIX: Using the new function name from memoryEngine
+    if (getUserMemorySnapshot) {
+        previousMemory = getUserMemorySnapshot(userId);
+    } else {
+        // Fallback or empty object if function not found (safety check)
+        previousMemory = {};
+    }
 
     const routeDecision = decideRoute({
       normalizedMessage,
@@ -208,6 +215,7 @@ async function handleChat(req, res) {
     const memoryResult = updateUserMemory({
       userId,
       message: normalizedMessage,
+      normalizedMessage: normalizedMessage, // Ensuring compatibility with both old/new engine calls
       context: haloContext,
       language: langCode,
       language_variant: languageVariant,
@@ -236,8 +244,8 @@ async function handleChat(req, res) {
     };
 
     if (shouldExposeDebug(req, body)) {
-      responseBody.memory_snapshot = memoryResult.memory;
-      responseBody.memory_delta = memoryResult.delta;
+      responseBody.memory_snapshot = memoryResult.memory || memoryResult.current_snapshot; // Handle both old/new return structures
+      responseBody.memory_delta = memoryResult.delta || memoryResult.memory_delta;
       responseBody.previous_memory = previousMemory;
     }
 

@@ -1,139 +1,121 @@
-const memoryStore = {};
+const fs = require("fs");
+const path = require("path");
 
-function normalizeText(s) {
-  return String(s || "").trim();
-}
+// Configuration for Persistence
+const DATA_DIR = path.join(__dirname, "../../data");
+const MEMORY_FILE = path.join(DATA_DIR, "memory_store.json");
 
-function buildPreview(text) {
-  const t = normalizeText(text).replace(/\s+/g, " ");
-  if (!t) return "";
-  return t.length > 80 ? t.slice(0, 80) : t;
-}
-
-function buildDefaultMemory(userId) {
-  return {
-    userId: userId || "anonymous",
-    lastMessage: "",
-    lastMessagePreview: "",
-    lastContext: null,
-    lastLanguage: null,
-    lastSafetyFlag: "none",
-    lastMood: "neutral",
-    lastUpdatedAt: null,
-    interactionCount: 0,
-    moodHistory: [],
-    lastTopic: "",
-    lastSignalCodes: [],
-    hesitationSignal: false
-  };
-}
-
-function deriveMood(context, safetyFlag) {
-  if (safetyFlag === "high_risk") return "crisis";
-  if (safetyFlag === "high_stress") return "stressed";
-  if (context === "emotional_discomfort") return "uncomfortable";
-  if (context === "decision") return "focused";
-  if (context === "planning") return "planning";
-  return "neutral";
-}
-
-function getUserMemory(userId) {
-  const id = userId || "anonymous";
-  if (!memoryStore[id]) {
-    memoryStore[id] = buildDefaultMemory(id);
+// 1. Initialize Persistence Layer
+// Ensure 'data' folder exists
+if (!fs.existsSync(DATA_DIR)) {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    console.log("Memory Persistence: Created 'data' directory.");
+  } catch (err) {
+    console.error("Memory Persistence Error: Could not create data directory.", err);
   }
-  return memoryStore[id];
 }
 
+// Load existing memory or start fresh
+let memoryStore = {};
+if (fs.existsSync(MEMORY_FILE)) {
+  try {
+    const rawData = fs.readFileSync(MEMORY_FILE, "utf-8");
+    memoryStore = JSON.parse(rawData);
+    console.log(`Memory Persistence: Loaded ${Object.keys(memoryStore).length} user profiles.`);
+  } catch (err) {
+    console.error("Memory Persistence Error: Corrupt memory file, starting fresh.", err);
+    memoryStore = {};
+  }
+} else {
+  console.log("Memory Persistence: No existing store found. Starting fresh.");
+}
+
+// Helper: Save to Disk (Sync for MVP safety, can be Async later)
+function persistMemory() {
+  try {
+    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memoryStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Memory Persistence Error: Failed to save memory to disk.", err);
+  }
+}
+
+/**
+ * Retrieves a snapshot of the user's memory metadata.
+ * @param {string} userId 
+ * @returns {object|null}
+ */
 function getUserMemorySnapshot(userId) {
-  return getUserMemory(userId || "anonymous");
+  if (!userId || !memoryStore[userId]) return null;
+  return memoryStore[userId];
 }
 
-function asArray(val) {
-  if (Array.isArray(val)) return val;
-  return [];
-}
+/**
+ * Updates the user's memory based on new interaction.
+ * @param {object} params { userId, normalizedMessage, context, language, safetyFlag }
+ * @returns {object} { memory_delta, current_snapshot }
+ */
+function updateUserMemory(params) {
+  const { userId, normalizedMessage, context, language, safetyFlag } = params;
 
-function updateUserMemory(payload) {
-  const userId = payload.userId || "anonymous";
-  const normalizedMessage = payload.normalizedMessage || "";
-  const context = payload.context || "general";
-  const language = payload.language || "en";
-  const safetyFlag = payload.safetyFlag || "none";
+  if (!userId) return { memory_delta: {} };
 
-  const reasoning = payload.reasoning && typeof payload.reasoning === "object" ? payload.reasoning : {};
-  const mu = reasoning.memory_update && typeof reasoning.memory_update === "object" ? reasoning.memory_update : {};
-
-  const muLastTopic = normalizeText(mu.last_topic);
-  const muLastContext = normalizeText(mu.last_context);
-  const muLastSafetyFlag = normalizeText(mu.last_safety_flag);
-  const muPreview = normalizeText(mu.last_message_preview);
-  const muSignalCodes = asArray(mu.last_signal_codes);
-  const muHesitation = !!mu.hesitation_signal;
-
-  const current = getUserMemory(userId);
-
-  const finalContext = muLastContext ? muLastContext : context;
-  const finalSafety = muLastSafetyFlag ? muLastSafetyFlag : safetyFlag;
-
-  const mood = deriveMood(finalContext, finalSafety);
-
-  const preview = muPreview ? muPreview : buildPreview(normalizedMessage);
-
-  const nextSignalCodes = Array.from(
-    new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
-  ).slice(0, 30);
-
-  const updated = {
-    ...current,
-    lastMessagePreview: preview,
-    lastMessage: preview,
-    lastContext: finalContext,
-    lastLanguage: language,
-    lastSafetyFlag: finalSafety,
-    lastMood: mood,
-    lastUpdatedAt: new Date().toISOString(),
-    interactionCount: current.interactionCount + 1,
-    lastTopic: muLastTopic ? muLastTopic : normalizeText(current.lastTopic),
-    lastSignalCodes: nextSignalCodes,
-    hesitationSignal: muHesitation || !!current.hesitationSignal
-  };
-
-  const newMoodEntry = {
-    at: updated.lastUpdatedAt,
-    context: updated.lastContext,
-    safetyFlag: updated.lastSafetyFlag,
-    mood: updated.lastMood
-  };
-
-  const history = Array.isArray(current.moodHistory)
-    ? [...current.moodHistory, newMoodEntry]
-    : [newMoodEntry];
-
-  if (history.length > 50) {
-    history.shift();
+  // Initialize if new user
+  if (!memoryStore[userId]) {
+    memoryStore[userId] = {
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      interaction_count: 0,
+      last_topic: null,
+      last_emotion_label: null,
+      mood_history: [],
+      mindscan_log: [] // Specifically for the Daily Ritual
+    };
   }
 
-  updated.moodHistory = history;
-  memoryStore[userId] = updated;
+  const userMem = memoryStore[userId];
+  userMem.interaction_count++;
+  userMem.last_active = new Date().toISOString();
 
-  const delta = {
-    userId,
-    interactionCount: updated.interactionCount,
-    lastMood: updated.lastMood,
-    lastSafetyFlag: updated.lastSafetyFlag,
-    lastTopic: updated.lastTopic,
-    hesitationSignal: updated.hesitationSignal
-  };
+  // Basic Context Updates
+  if (normalizedMessage) {
+      // In a real semantic engine, we would extract topics here.
+      // For MVP, we just store the last message as a naive "topic" placeholder if context implies it.
+      if (context !== "mindscan_log") {
+        userMem.last_topic = normalizedMessage.substring(0, 50) + (normalizedMessage.length > 50 ? "..." : "");
+      }
+  }
+
+  // Handle MindScan (Daily Ritual) specifically
+  if (context === "mindscan_log") {
+      // Add to mood history
+      // Format: [Date, Word]
+      const entry = { date: new Date().toISOString().split('T')[0], word: normalizedMessage };
+      if (!userMem.mindscan_log) userMem.mindscan_log = [];
+      userMem.mindscan_log.push(entry);
+      
+      // Keep only last 30 entries
+      if (userMem.mindscan_log.length > 30) userMem.mindscan_log.shift();
+      
+      // Update mood_history as well for the prompt engine to see
+      if (!userMem.mood_history) userMem.mood_history = [];
+      userMem.mood_history.push(`[${entry.date}] ${entry.word}`);
+      if (userMem.mood_history.length > 7) userMem.mood_history.shift();
+  }
+
+  // Save changes to disk immediately
+  persistMemory();
 
   return {
-    memory: updated,
-    delta
+    memory_delta: {
+      interaction_count: userMem.interaction_count,
+      context_update: context
+    },
+    current_snapshot: userMem
   };
 }
 
 module.exports = {
-  getUserMemory,
   getUserMemorySnapshot,
   updateUserMemory
 };

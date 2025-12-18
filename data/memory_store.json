@@ -1,0 +1,46 @@
+{
+  "test-user-scan": {
+    "user_id": "test-user-scan",
+    "created_at": "2025-12-18T12:02:10.301Z",
+    "interaction_count": 1,
+    "last_topic": null,
+    "last_emotion_label": null,
+    "mood_history": [
+      "[2025-12-18] مخنوق"
+    ],
+    "mindscan_log": [
+      {
+        "date": "2025-12-18",
+        "word": "مخنوق"
+      }
+    ],
+    "last_active": "2025-12-18T12:02:10.306Z"
+  },
+  "test-user-scan-en": {
+    "user_id": "test-user-scan-en",
+    "created_at": "2025-12-18T12:02:10.375Z",
+    "interaction_count": 1,
+    "last_topic": null,
+    "last_emotion_label": null,
+    "mood_history": [
+      "[2025-12-18] Overwhelmed"
+    ],
+    "mindscan_log": [
+      {
+        "date": "2025-12-18",
+        "word": "Overwhelmed"
+      }
+    ],
+    "last_active": "2025-12-18T12:02:10.375Z"
+  },
+  "contract-test-user": {
+    "user_id": "contract-test-user",
+    "created_at": "2025-12-18T12:21:29.160Z",
+    "interaction_count": 1,
+    "last_topic": "حاسس مخنوق",
+    "last_emotion_label": null,
+    "mood_history": [],
+    "mindscan_log": [],
+    "last_active": "2025-12-18T12:21:29.162Z"
+  }
+}
