@@ -1,44 +1,11 @@
 const safetyGuard = require("../engines/safetyGuard");
 const reasoningEngine = require("../engines/reasoningEngine");
-// FIX: Updated to destruct 'getUserMemorySnapshot' instead of 'getUserMemory'
-const { getUserMemorySnapshot, updateUserMemory } = require("../engines/memoryEngine");
-const messageNormalizer = require("../engines/messageNormalizer");
-const languageDetector = require("../engines/languageDetector");
-const contextClassifier = require("../engines/contextClassifier");
+const { getUserMemory, updateUserMemory } = require("../engines/memoryEngine");
+const { normalizeMessage } = require("../engines/messageNormalizer");
+const { detectLanguage } = require("../engines/languageDetector");
+const { classifyMessage } = require("../engines/contextClassifier");
 const { decideRoute } = require("../engines/routingEngine");
 const { evaluatePolicy } = require("../engines/policyEngine");
-
-function getNormalizeFn() {
-  if (typeof messageNormalizer === "function") return messageNormalizer;
-  if (messageNormalizer && typeof messageNormalizer.normalize === "function") return messageNormalizer.normalize;
-  if (messageNormalizer && typeof messageNormalizer.normalizeMessage === "function") return messageNormalizer.normalizeMessage;
-  return function (text) {
-    return typeof text === "string" ? text : "";
-  };
-}
-
-function getLanguageDetectorFn() {
-  if (typeof languageDetector === "function") return languageDetector;
-  if (languageDetector && typeof languageDetector.detect === "function") return languageDetector.detect;
-  if (languageDetector && typeof languageDetector.detectLanguage === "function") return languageDetector.detectLanguage;
-  return function () {
-    return { language: "mixed", confidence: 0 };
-  };
-}
-
-function getContextClassifierFn() {
-  if (typeof contextClassifier === "function") return contextClassifier;
-  if (contextClassifier && typeof contextClassifier.classifyMessage === "function") return contextClassifier.classifyMessage;
-  if (contextClassifier && typeof contextClassifier.classify === "function") return contextClassifier.classify;
-  if (contextClassifier && typeof contextClassifier.classifyContext === "function") return contextClassifier.classifyContext;
-  return function () {
-    return { category: "low_stress", isHighStress: false, messageLength: 0 };
-  };
-}
-
-const normalize = getNormalizeFn();
-const detectLang = getLanguageDetectorFn();
-const classifyCtx = getContextClassifierFn();
 
 function resolveLanguageCode(languageInfo) {
   if (!languageInfo) return "en";
@@ -158,23 +125,17 @@ async function handleChat(req, res) {
     const body = req.body || {};
     userId = body.user_id || "anonymous";
     rawMessage = body.message || "";
-    normalizedMessage = normalize(rawMessage);
+    normalizedMessage = normalizeMessage(rawMessage);
 
-    languageInfo = detectLang(normalizedMessage);
-    rawContextInfo = classifyCtx(normalizedMessage);
+    languageInfo = detectLanguage(normalizedMessage);
+    rawContextInfo = classifyMessage(normalizedMessage);
     safetyInfo = safetyGuard(normalizedMessage, rawContextInfo);
 
     langCode = resolveLanguageCode(languageInfo);
     languageVariant = extractLanguageVariant(languageInfo);
     haloContext = mapContextForHalo(rawContextInfo.category);
 
-    // FIX: Using the new function name from memoryEngine
-    if (getUserMemorySnapshot) {
-        previousMemory = getUserMemorySnapshot(userId);
-    } else {
-        // Fallback or empty object if function not found (safety check)
-        previousMemory = {};
-    }
+    previousMemory = getUserMemory(userId);
 
     const routeDecision = decideRoute({
       normalizedMessage,
@@ -215,7 +176,6 @@ async function handleChat(req, res) {
     const memoryResult = updateUserMemory({
       userId,
       message: normalizedMessage,
-      normalizedMessage: normalizedMessage, // Ensuring compatibility with both old/new engine calls
       context: haloContext,
       language: langCode,
       language_variant: languageVariant,
@@ -244,8 +204,8 @@ async function handleChat(req, res) {
     };
 
     if (shouldExposeDebug(req, body)) {
-      responseBody.memory_snapshot = memoryResult.memory || memoryResult.current_snapshot; // Handle both old/new return structures
-      responseBody.memory_delta = memoryResult.delta || memoryResult.memory_delta;
+      responseBody.memory_snapshot = memoryResult.memory;
+      responseBody.memory_delta = memoryResult.delta;
       responseBody.previous_memory = previousMemory;
     }
 
