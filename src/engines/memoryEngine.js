@@ -13,7 +13,7 @@ function buildPreview(text) {
 function buildDefaultMemory(userId) {
   return {
     userId: userId || "anonymous",
-    lastMessage: "", // Changed: Stores preview only, never full text
+    lastMessage: "", // Stores preview only
     lastMessagePreview: "",
     lastContext: null,
     lastLanguage: null,
@@ -56,7 +56,8 @@ function asArray(val) {
 
 function updateUserMemory(payload) {
   const userId = payload.userId || "anonymous";
-  const normalizedMessage = payload.normalizedMessage || "";
+  // FIX: Accept payload.message OR payload.normalizedMessage
+  const normalizedMessage = payload.message || payload.normalizedMessage || "";
   const context = payload.context || "general";
   const language = payload.language || "en";
   const safetyFlag = payload.safetyFlag || "none";
@@ -84,11 +85,10 @@ function updateUserMemory(payload) {
     new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
   ).slice(0, 30);
 
-  // PRIVACY FIX: Never store full normalizedMessage in lastMessage. Use preview.
   const updated = {
     ...current,
     lastMessagePreview: preview,
-    lastMessage: preview, // Fix: Enforce preview only
+    lastMessage: preview, // Privacy: Preview only
     lastContext: finalContext,
     lastLanguage: language,
     lastSafetyFlag: finalSafety,
