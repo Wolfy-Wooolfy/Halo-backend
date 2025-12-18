@@ -1,6 +1,196 @@
+# SOURCE_OF_TRUTH — HALO
+## Authoritative Access Map & Engineering Contract (Applies to the Assistant)
+
+> **IMPORTANT:** This document is written **for the HALO assistant** (the AI) and defines the assistant’s permissions, obligations, and hard gates while working with Khaled on HALO.
 
 ---
 
+## 1) Single Source of Truth (Non-Negotiable)
+
+GitHub repositories are the **ONLY authoritative source** for:
+- Executable code
+- Architecture decisions
+- System rules
+- Product logic
+- Official documentation
+
+Anything outside GitHub (ZIP files, chat history, screenshots, exports, local copies) is **NON-authoritative**
+unless explicitly pasted as plain text and approved.
+
+---
+
+## 2) Authoritative Repositories
+
+### 2.1 Backend Code Repository
+- Repo: https://github.com/Wolfy-Wooolfy/Halo-backend
+- Authoritative branch: `main`
+- Runtime: Node.js
+- Start command:
+  - `node server.js`
+
+### 2.2 Documentation Repository
+- Repo: https://github.com/Wolfy-Wooolfy/Halo-Documents
+- Authoritative branch: `main`
+
+---
+
+## 3) Runtime Entry & Execution Flow
+
+- Entry point: `server.js` (repo root)
+- Core execution root: `src/`
+- API exposed through Express routes
+- Primary user interaction via `/api/chat`
+
+---
+
+## 4) CODE MAP
+### (RAW – Source of Execution)
+
+> Any file **not listed here with a RAW link is considered non-existent**
+> for review, modification, or reasoning.
+
+---
+
+### 4.1 Repo Root (Halo-backend)
+
+#### SOURCE_OF_TRUTH.md
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/SOURCE_OF_TRUTH.md
+
+---
+
+#### package.json
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/package.json
+
+---
+
+#### package-lock.json
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/package-lock.json
+
+---
+
+#### server.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/server.js
+
+---
+
+### 4.2 Client (halo-client)
+
+#### halo-client/index.html
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/halo-client/index.html
+
+---
+
+### 4.3 Routes Layer
+
+#### src/routes/chat.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/routes/chat.js
+
+---
+
+### 4.4 Core Layer
+
+#### src/core/app.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/core/app.js
+
+---
+
+#### src/core/chatController.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/core/chatController.js
+
+---
+
+### 4.5 Engines Layer (HALO Intelligence Core)
+
+#### reasoningEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/reasoningEngine.js
+
+---
+
+#### policyEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/policyEngine.js
+
+---
+
+#### memoryEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/memoryEngine.js
+
+---
+
+#### promptBuilder.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/promptBuilder.js
+
+---
+
+#### contextClassifier.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/contextClassifier.js
+
+---
+
+#### dialectEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/dialectEngine.js
+
+---
+
+#### languageDetector.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/languageDetector.js
+
+---
+
+#### llmClient.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/llmClient.js
+
+---
+
+#### routingEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/routingEngine.js
+
+---
+
+#### safetyGuard.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/safetyGuard.js
+
+---
+
+#### memoryExtractor.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/memoryExtractor.js
+
+---
+
+#### memorySignalApplier.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/memorySignalApplier.js
+
+---
+
+#### messageNormalizer.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/messageNormalizer.js
+
+---
+
+### 4.6 Tests
+
+#### src/tests/chat.contract.test.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/tests/chat.contract.test.js
+
+---
+
+#### src/tests/safety.emergency.test.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/tests/safety.emergency.test.js
+
+---
+
+### 4.7 Local Runtime Config (Non-GitHub, Runtime-Authoritative)
+
+> This file is typically **NOT committed** to GitHub for security, but it is **runtime-authoritative** for local execution.
+
+#### .env (repo root)
+Expected content (LLM_API_KEY intentionally redacted in this document):
+LLM_API_URL=https://api.openai.com/v1/chat/completions
+LLM_API_KEY=sk-proj-REDACTED
+LLM_MODEL=gpt-4o
+HALO_DEBUG=0
+DOTENV_CONFIG_QUIET=true
+
+---
 ## 5) HALO Documents Map
 ### (RAW – Authoritative Concept, Rules & Governance)
 
@@ -160,6 +350,8 @@ the assistant MUST:
    - `CODE READ COMPLETE: Section 4 (all listed files)`
 
 ---
+
+## 6) Working Protocol (Strict)
 
 1) **All target file paths and RAW links are defined in this SOURCE_OF_TRUTH map.**  
    - Khaled does **NOT** need to specify paths again.  
