@@ -174,7 +174,14 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/tests
 
 ---
 
-### 4.7 Local Runtime Config (Non-GitHub, Runtime-Authoritative)
+### 4.7 Utils
+
+#### src/utils/helpers.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/utils/helpers.js
+
+---
+
+### 4.8 Local Runtime Config (Non-GitHub, Runtime-Authoritative)
 
 > This file is typically **NOT committed** to GitHub for security, but it is **runtime-authoritative** for local execution.
 
