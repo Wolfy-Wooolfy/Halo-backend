@@ -14,12 +14,13 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 
 ---
 
-### 5.2 Documents
-
+### 5.1.1 Execution Gates (Highest Operational Authority)
 #### HALO – Engineering Checklists & Execution Gates (Strict)
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/refs/heads/main/CHECKLIST.md
 
 ---
+
+### 5.2 Documents
 
 #### HALO – Memory System — Growth + Semantic Engine
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20-%20Memory%20System%20%E2%80%94%20Growth%20%2B%20Semantic%20Engine.md
