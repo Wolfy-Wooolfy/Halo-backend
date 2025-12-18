@@ -1,4 +1,6 @@
-const { normalizeText } = require("../utils/helpers");
+function normalizeText(s) {
+  return String(s || "").trim();
+}
 
 function hasArabicChars(text) {
   return /[\u0600-\u06FF]/.test(text);
@@ -238,6 +240,26 @@ function detectLanguage(text) {
   return { language: "unknown", confidence: 0.2 };
 }
 
+function resolveLanguageCode(languageInfo) {
+  if (!languageInfo) return "en";
+  
+  // If string (legacy or direct code passed)
+  if (typeof languageInfo === "string") {
+    const lowered = languageInfo.toLowerCase();
+    if (lowered === "ar") return "ar";
+    if (lowered.startsWith("arabic")) return "ar";
+    return "en";
+  }
+
+  // If object { language: "...", confidence: ... }
+  const label = String(languageInfo.language || "").toLowerCase();
+  if (label === "ar") return "ar";
+  if (label.startsWith("arabic")) return "ar";
+  
+  return "en";
+}
+
 module.exports = {
-  detectLanguage
+  detectLanguage,
+  resolveLanguageCode
 };
