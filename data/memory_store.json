@@ -704,5 +704,108 @@
         "lastDetected": "2025-12-19T14:18:49.463Z"
       }
     ]
+  },
+  "phase2-user": {
+    "userId": "phase2-user",
+    "createdAt": "2025-12-19T15:03:08.840Z",
+    "lastMessage": "أنا بدأت شغل جديد النهاردة وحاسس بضغط كبير جداً ومش عارف أنام.",
+    "lastMessagePreview": "أنا بدأت شغل جديد النهاردة وحاسس بضغط كبير جداً ومش عارف أنام.",
+    "lastContext": "general",
+    "lastLanguage": "ar",
+    "lastSafetyFlag": "none",
+    "lastMood": "neutral",
+    "lastUpdatedAt": "2025-12-19T15:18:53.530Z",
+    "interactionCount": 3,
+    "moodHistory": [
+      {
+        "at": "2025-12-19T15:03:08.843Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T15:18:24.346Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T15:18:53.530Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      }
+    ],
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "semanticGraph": {
+      "nodes": [],
+      "dimensions": {
+        "work": {
+          "score": 2,
+          "trend": "stable",
+          "lastActive": "2025-12-19T15:18:53.530Z"
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-19T15:18:53.530Z",
+        "createdAt": "2025-12-19T15:03:08.840Z"
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-19T15:18:53.530Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.12375866666666667,
+        "focus": 0.6,
+        "trust": 0.12973758666666668
+      },
+      "delta_hours": 0.008106666666666667
+    },
+    "timeline": [
+      {
+        "id": "evt_1766157533530",
+        "date": "2025-12-19T15:18:53.530Z",
+        "type": "NEW_BEGINNING",
+        "summary": "أنا بدأت شغل جديد النهاردة وحاسس بضغط كبير جداً ومش عارف أنا...",
+        "dimension": "work",
+        "mood": "neutral",
+        "importance": "normal"
+      }
+    ],
+    "patterns": []
   }
 }
