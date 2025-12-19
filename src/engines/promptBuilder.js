@@ -2,6 +2,9 @@ const { getUserMemorySnapshot } = require("../engines/memoryEngine");
 const { resolveLanguageCode, extractLanguageVariant } = require("../engines/languageDetector");
 const { normalizeMessage } = require("../engines/messageNormalizer");
 
+// REMOVED: normalizeText (Use messageNormalizer)
+// REMOVED: parseLanguageVariant, isArabicBase (Use languageDetector)
+
 function buildDialectStyleInstruction(languageVariant) {
   const v = normalizeMessage(languageVariant).toLowerCase();
   
@@ -213,6 +216,10 @@ function buildPolicyLayer(policy, route, language) {
   ].join(" ");
 }
 
+/**
+ * PHASE 2 UPGRADE: LNN & Semantic Graph Injection
+ * Extracts biological state and dominant life themes.
+ */
 function buildMemorySummaryFromSnapshot(memory, language) {
   const isArabic = resolveLanguageCode(language) === "ar";
 
@@ -224,29 +231,50 @@ function buildMemorySummaryFromSnapshot(memory, language) {
   }
 
   const parts = [];
+  
+  // 1. Basic Metadata (Phase 1)
   const lastTopic = memory.last_topic || memory.lastTopic;
   const lastEmotion = memory.last_emotion_label || memory.lastEmotionLabel;
-  const energy = memory.energy_level || memory.energyLevel;
   const engagement = memory.engagement_style || memory.engagementStyle;
-  const moodTrend = memory.mood_7_days || memory.mood7days || memory.mood_history;
 
-  if (isArabic) {
-    if (lastTopic) parts.push("آخر موضوع ظاهر في الذاكرة: " + String(lastTopic));
-    if (lastEmotion) parts.push("آخر حالة شعورية مسجلة: " + String(lastEmotion));
-    if (energy) parts.push("مستوى الطاقة التقريبي: " + String(energy));
-    if (engagement) parts.push("أسلوب التفاعل الغالب: " + String(engagement));
-    if (Array.isArray(moodTrend) && moodTrend.length > 0) parts.push("توجه المزاج السابق (مبسط): " + moodTrend.join(", "));
-    if (parts.length === 0) return "الذاكرة الحالية خفيفة جدًا. ركز على الحاضر فقط بدون افتراضات.";
-    return "ملخص سياق المستخدم (من الذاكرة الميتاداتية):\n- " + parts.join("\n- ");
+  if (lastTopic) parts.push(isArabic ? "آخر موضوع: " + String(lastTopic) : "Last topic: " + String(lastTopic));
+  if (lastEmotion) parts.push(isArabic ? "آخر حالة شعورية: " + String(lastEmotion) : "Last emotion label: " + String(lastEmotion));
+  if (engagement) parts.push(isArabic ? "أسلوب التفاعل: " + String(engagement) : "Interaction style: " + String(engagement));
+
+  // 2. LNN Biological State (Phase 2)
+  if (memory.lnnState && memory.lnnState.neurons) {
+    const { stress, fatigue, trust, focus } = memory.lnnState.neurons;
+    
+    // Interpret LNN for LLM
+    const bioStatus = [];
+    if (stress > 0.6) bioStatus.push(isArabic ? "المستخدم يعاني من تراكم التوتر (كن هادئاً جداً)" : "User has accumulated stress (Be very calm).");
+    if (fatigue > 0.6) bioStatus.push(isArabic ? "المستخدم مرهق ذهنياً (اختصر الردود)" : "User is mentally fatigued (Keep replies extremely short).");
+    if (focus > 0.7) bioStatus.push(isArabic ? "المستخدم في حالة تركيز عالية (كن مباشراً)" : "User is highly focused (Be direct).");
+    if (trust > 0.5) bioStatus.push(isArabic ? "مستوى الثقة مرتفع (يمكنك أن تكون أكثر صراحة)" : "High trust level (You can be more candid).");
+    
+    if (bioStatus.length > 0) {
+      parts.push(isArabic ? "الحالة البيولوجية (LNN): " + bioStatus.join(" | ") : "Biological State (LNN): " + bioStatus.join(" | "));
+    }
   }
 
-  if (lastTopic) parts.push("Last topic: " + String(lastTopic));
-  if (lastEmotion) parts.push("Last emotion label: " + String(lastEmotion));
-  if (energy) parts.push("Approximate energy level: " + String(energy));
-  if (engagement) parts.push("Interaction style: " + String(engagement));
-  if (Array.isArray(moodTrend) && moodTrend.length > 0) parts.push("Recent mood trend (simplified): " + moodTrend.join(", "));
-  if (parts.length === 0) return "Current memory is very light. Focus on the present moment only.";
-  return "User context summary (from metadata-only memory):\n- " + parts.join("\n- ");
+  // 3. Semantic Graph Dominant Themes (Phase 2)
+  if (memory.semanticGraph && memory.semanticGraph.dimensions) {
+    // Sort dimensions by score descending
+    const dims = Object.entries(memory.semanticGraph.dimensions)
+      .filter(([_, data]) => data.score > 10) // Only significant ones
+      .sort((a, b) => b[1].score - a[1].score)
+      .slice(0, 2) // Top 2
+      .map(([name, data]) => `${name} (${data.score}%)`);
+      
+    if (dims.length > 0) {
+      parts.push(isArabic ? "أهم محاور الحياة المسيطرة: " + dims.join(", ") : "Dominant Life Themes: " + dims.join(", "));
+    }
+  }
+
+  if (parts.length === 0) return isArabic ? "الذاكرة خفيفة. ركز على الحاضر." : "Memory is light. Focus on the present.";
+  
+  const header = isArabic ? "ملخص سياق المستخدم (Phase 2 Memory):" : "User Context Summary (Phase 2 Memory):";
+  return header + "\n- " + parts.join("\n- ");
 }
 
 function buildTaskSection(language) {
@@ -325,7 +353,8 @@ function buildHaloPrompt(options) {
   const behaviorLayer = buildBehaviorLayer(language);
   const safetyLayer = buildSafetyLayer(safety, context, language);
   const policyLayer = buildPolicyLayer(policy, route, language);
-  const memorySummary = buildMemorySummaryFromSnapshot(memorySnapshot, language);
+  // This now includes LNN & Semantic Data
+  const memorySummary = buildMemorySummaryFromSnapshot(memorySnapshot, language); 
   const taskSection = buildTaskSection(language);
   const outputFormatSection = buildOutputFormatSection(language);
   const userBlock = buildUserMessageBlock(message, language);

@@ -110,14 +110,14 @@
   },
   "halo-mind-test": {
     "userId": "halo-mind-test",
-    "lastMessage": "عندي اجتماعات واعمال مهمة كتير بكرة",
-    "lastMessagePreview": "عندي اجتماعات واعمال مهمة كتير بكرة",
+    "lastMessage": "مش عارف أبدأ منين، المواضيع كتير قوي",
+    "lastMessagePreview": "مش عارف أبدأ منين، المواضيع كتير قوي",
     "lastContext": "general",
     "lastLanguage": "ar",
     "lastSafetyFlag": "none",
     "lastMood": "neutral",
-    "lastUpdatedAt": "2025-12-19T01:18:41.565Z",
-    "interactionCount": 5,
+    "lastUpdatedAt": "2025-12-19T12:18:42.625Z",
+    "interactionCount": 6,
     "moodHistory": [
       {
         "at": "2025-12-19T01:00:33.859Z",
@@ -148,6 +148,12 @@
         "context": "general",
         "safetyFlag": "none",
         "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T12:18:42.625Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
       }
     ],
     "lastTopic": "",
@@ -174,8 +180,9 @@
           "trend": "stable"
         },
         "clarity": {
-          "score": 0,
-          "trend": "stable"
+          "score": 2,
+          "trend": "stable",
+          "lastActive": "2025-12-19T12:18:42.624Z"
         },
         "stress": {
           "score": 0,
@@ -192,14 +199,14 @@
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-19T01:18:41.565Z",
+      "lastTick": "2025-12-19T12:18:42.625Z",
       "neurons": {
         "stress": 0,
-        "fatigue": 0.09641136111111112,
+        "fatigue": 0.05,
         "focus": 0.5,
-        "trust": 0.1199641136111111
+        "trust": 0.11896381916666665
       },
-      "delta_hours": 0.03588638888888889
+      "delta_hours": 11.000294444444444
     }
   }
 }
