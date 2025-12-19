@@ -93,6 +93,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/route
 
 ---
 
+#### src/routes/notifications.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/routes/notifications.js
+
+---
+
 ### 4.4 Core Layer
 
 #### src/core/mindscanController.js
@@ -154,6 +159,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engin
 
 #### messageNormalizer.js
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/messageNormalizer.js
+
+---
+
+#### notificationEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/notificationEngine.js
 
 ---
 

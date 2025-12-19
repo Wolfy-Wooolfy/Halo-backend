@@ -17,6 +17,7 @@ app.use(express.json());
 // Routes
 const chatRouter = require("./src/routes/chat");
 const mindscanRouter = require("./src/routes/mindscan");
+const notificationRouter = require("./src/routes/notifications");
 
 // Use explicit mounting paths
 // chatRouter defines router.post("/chat", ...) internally, so we mount at /api
@@ -26,6 +27,10 @@ app.use("/api", chatRouter);
 // mindscanRouter defines router.post("/", ...) internally, so we mount at /api/mindscan
 // Result: POST /api/mindscan
 app.use("/api/mindscan", mindscanRouter);
+
+// notificationRouter defines router.get("/", ...) internally, so we mount at /api/notifications
+// Result: GET /api/notifications
+app.use("/api/notifications", notificationRouter);
 
 app.get("/health", (req, res) => {
   return res.status(200).json({
