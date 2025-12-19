@@ -110,14 +110,14 @@
   },
   "halo-mind-test": {
     "userId": "halo-mind-test",
-    "lastMessage": "حاسس بضغط كبير في الشغل ومش عارف اركز",
-    "lastMessagePreview": "حاسس بضغط كبير في الشغل ومش عارف اركز",
+    "lastMessage": "عندي اجتماعات واعمال مهمة كتير بكرة",
+    "lastMessagePreview": "عندي اجتماعات واعمال مهمة كتير بكرة",
     "lastContext": "general",
     "lastLanguage": "ar",
     "lastSafetyFlag": "none",
     "lastMood": "neutral",
-    "lastUpdatedAt": "2025-12-19T01:08:21.181Z",
-    "interactionCount": 3,
+    "lastUpdatedAt": "2025-12-19T01:18:41.565Z",
+    "interactionCount": 5,
     "moodHistory": [
       {
         "at": "2025-12-19T01:00:33.859Z",
@@ -136,6 +136,18 @@
         "context": "general",
         "safetyFlag": "none",
         "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T01:16:32.374Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T01:18:41.565Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
       }
     ],
     "lastTopic": "",
@@ -145,9 +157,9 @@
       "nodes": [],
       "dimensions": {
         "work": {
-          "score": 2,
+          "score": 6,
           "trend": "stable",
-          "lastActive": "2025-12-19T01:08:21.180Z"
+          "lastActive": "2025-12-19T01:18:41.565Z"
         },
         "self": {
           "score": 0,
@@ -178,6 +190,16 @@
         "stage": "seed",
         "lastAnalysis": "2025-12-19T01:00:30.464Z"
       }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-19T01:18:41.565Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.09641136111111112,
+        "focus": 0.5,
+        "trust": 0.1199641136111111
+      },
+      "delta_hours": 0.03588638888888889
     }
   }
 }

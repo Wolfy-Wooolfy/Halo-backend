@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { normalizeMessage } = require("./messageNormalizer");
 const { updateSemanticGraph, createEmptyGraph } = require("./semanticMemoryEngine");
+const { getInitialLNNState, tickLNN } = require("./lnnEngine"); // Import LNN
 
 // File persistence setup
 const DATA_DIR = path.join(__dirname, "../../data");
@@ -44,7 +45,6 @@ function buildPreview(text) {
 function buildDefaultMemory(userId) {
   return {
     userId: userId || "anonymous",
-    // V0.1 Fields (Kept for compatibility)
     lastMessage: "",
     lastMessagePreview: "",
     lastContext: null,
@@ -59,7 +59,10 @@ function buildDefaultMemory(userId) {
     hesitationSignal: false,
     
     // V1.0 SEMANTIC GRAPH
-    semanticGraph: createEmptyGraph()
+    semanticGraph: createEmptyGraph(),
+    
+    // V1.1 LIQUID NEURAL NETWORK
+    lnnState: getInitialLNNState()
   };
 }
 
@@ -77,9 +80,12 @@ function getUserMemory(userId) {
   if (!memoryStore[id]) {
     memoryStore[id] = buildDefaultMemory(id);
   }
-  // Data Migration: Ensure graph exists for old users
+  // Data Migration
   if (!memoryStore[id].semanticGraph) {
      memoryStore[id].semanticGraph = createEmptyGraph();
+  }
+  if (!memoryStore[id].lnnState) {
+     memoryStore[id].lnnState = getInitialLNNState();
   }
   return memoryStore[id];
 }
@@ -95,7 +101,6 @@ function asArray(val) {
 
 function updateUserMemory(payload) {
   const userId = payload.userId || "anonymous";
-  // FIX: Accept both 'normalizedMessage' AND 'message' to prevent empty text bug
   const normalizedMessage = payload.normalizedMessage || payload.message || "";
   
   const context = payload.context || "general";
@@ -125,15 +130,26 @@ function updateUserMemory(payload) {
     new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
   ).slice(0, 30);
 
-  // --- PHASE 2 UPGRADE: Update Semantic Graph ---
-  // Now normalizedMessage is guaranteed to have the text
+  // --- PHASE 2: Semantic Graph ---
   const updatedGraph = updateSemanticGraph(current.semanticGraph, {
     text: normalizedMessage,
     context: finalContext,
     safety: finalSafety,
     mood: mood
   });
-  // ----------------------------------------------
+  
+  // Calculate semantic activation (did we hit a dimension?)
+  // We can infer this by checking if score changed, but for simplicity we pass 0 or 1
+  // In a deeper integration, semantic engine would return 'activationLevel'
+  const isSemanticActive = Object.values(updatedGraph.dimensions).some(d => d.lastActive === updatedGraph.meta.lastAnalysis);
+
+  // --- PHASE 2: LNN Tick ---
+  const updatedLNN = tickLNN(current.lnnState, {
+    context: finalContext,
+    safety: finalSafety,
+    messageLength: normalizedMessage.length,
+    semanticScore: isSemanticActive ? 1 : 0
+  });
 
   const updated = {
     ...current,
@@ -149,8 +165,8 @@ function updateUserMemory(payload) {
     lastSignalCodes: nextSignalCodes,
     hesitationSignal: muHesitation || !!current.hesitationSignal,
     
-    // Store new graph
-    semanticGraph: updatedGraph
+    semanticGraph: updatedGraph,
+    lnnState: updatedLNN
   };
 
   const newMoodEntry = {
@@ -171,7 +187,6 @@ function updateUserMemory(payload) {
   updated.moodHistory = history;
   memoryStore[userId] = updated;
 
-  // Persist to disk
   saveMemoryToDisk();
 
   const delta = {
@@ -180,7 +195,9 @@ function updateUserMemory(payload) {
     lastMood: updated.lastMood,
     lastSafetyFlag: updated.lastSafetyFlag,
     lastTopic: updated.lastTopic,
-    hesitationSignal: updated.hesitationSignal
+    hesitationSignal: updated.hesitationSignal,
+    // Expose LNN delta for debug
+    lnnDelta: updatedLNN.delta_hours 
   };
 
   return {
