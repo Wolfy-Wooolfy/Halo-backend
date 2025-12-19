@@ -167,6 +167,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engin
 
 ---
 
+#### semanticMemoryEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/semanticMemoryEngine.js
+
+---
+
 ### 4.6 Tests
 
 #### src/tests/chat.contract.test.js

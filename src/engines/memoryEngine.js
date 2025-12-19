@@ -1,10 +1,50 @@
-const memoryStore = {};
+const fs = require("fs");
+const path = require("path");
 const { normalizeMessage } = require("./messageNormalizer");
-const { buildPreview } = require("../utils/helpers");
+const { updateSemanticGraph, createEmptyGraph } = require("./semanticMemoryEngine");
+
+// File persistence setup
+const DATA_DIR = path.join(__dirname, "../../data");
+const MEMORY_FILE = path.join(DATA_DIR, "memory_store.json");
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// In-memory cache
+let memoryStore = {};
+
+// Load from disk on startup
+if (fs.existsSync(MEMORY_FILE)) {
+  try {
+    const raw = fs.readFileSync(MEMORY_FILE, "utf-8");
+    memoryStore = JSON.parse(raw);
+    console.log(`[MemoryEngine] Loaded ${Object.keys(memoryStore).length} user profiles.`);
+  } catch (err) {
+    console.error("[MemoryEngine] Failed to load memory file:", err);
+    memoryStore = {};
+  }
+}
+
+function saveMemoryToDisk() {
+  try {
+    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memoryStore, null, 2));
+  } catch (err) {
+    console.error("[MemoryEngine] Failed to save memory:", err);
+  }
+}
+
+function buildPreview(text) {
+  const t = normalizeMessage(text).replace(/\s+/g, " ");
+  if (!t) return "";
+  return t.length > 80 ? t.slice(0, 80) : t;
+}
 
 function buildDefaultMemory(userId) {
   return {
     userId: userId || "anonymous",
+    // V0.1 Fields (Kept for compatibility)
     lastMessage: "",
     lastMessagePreview: "",
     lastContext: null,
@@ -16,7 +56,10 @@ function buildDefaultMemory(userId) {
     moodHistory: [],
     lastTopic: "",
     lastSignalCodes: [],
-    hesitationSignal: false
+    hesitationSignal: false,
+    
+    // V1.0 SEMANTIC GRAPH
+    semanticGraph: createEmptyGraph()
   };
 }
 
@@ -33,6 +76,10 @@ function getUserMemory(userId) {
   const id = userId || "anonymous";
   if (!memoryStore[id]) {
     memoryStore[id] = buildDefaultMemory(id);
+  }
+  // Data Migration: Ensure graph exists for old users
+  if (!memoryStore[id].semanticGraph) {
+     memoryStore[id].semanticGraph = createEmptyGraph();
   }
   return memoryStore[id];
 }
@@ -76,10 +123,20 @@ function updateUserMemory(payload) {
     new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
   ).slice(0, 30);
 
+  // --- PHASE 2 UPGRADE: Update Semantic Graph ---
+  const updatedGraph = updateSemanticGraph(current.semanticGraph, {
+    text: normalizedMessage,
+    context: finalContext,
+    safety: finalSafety,
+    mood: mood
+  });
+  // ----------------------------------------------
+
   const updated = {
     ...current,
     lastMessagePreview: preview,
-    lastMessage: preview,
+    // Note: We avoid storing full text if possible, using preview
+    lastMessage: preview, 
     lastContext: finalContext,
     lastLanguage: language,
     lastSafetyFlag: finalSafety,
@@ -88,7 +145,10 @@ function updateUserMemory(payload) {
     interactionCount: current.interactionCount + 1,
     lastTopic: muLastTopic ? muLastTopic : normalizeMessage(current.lastTopic),
     lastSignalCodes: nextSignalCodes,
-    hesitationSignal: muHesitation || !!current.hesitationSignal
+    hesitationSignal: muHesitation || !!current.hesitationSignal,
+    
+    // Store new graph
+    semanticGraph: updatedGraph
   };
 
   const newMoodEntry = {
@@ -108,6 +168,9 @@ function updateUserMemory(payload) {
 
   updated.moodHistory = history;
   memoryStore[userId] = updated;
+
+  // Persist to disk
+  saveMemoryToDisk();
 
   const delta = {
     userId,
