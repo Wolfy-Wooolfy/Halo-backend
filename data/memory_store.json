@@ -382,5 +382,107 @@
       },
       "delta_hours": 0.0018655555555555556
     }
+  },
+  "timeline-test": {
+    "userId": "timeline-test",
+    "createdAt": "2025-12-19T12:41:25.216Z",
+    "lastMessage": "I finally started my new job today",
+    "lastMessagePreview": "I finally started my new job today",
+    "lastContext": "general",
+    "lastLanguage": "en",
+    "lastSafetyFlag": "none",
+    "lastMood": "neutral",
+    "lastUpdatedAt": "2025-12-19T12:43:38.509Z",
+    "interactionCount": 3,
+    "moodHistory": [
+      {
+        "at": "2025-12-19T12:41:25.218Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T12:42:18.941Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T12:43:38.509Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      }
+    ],
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "semanticGraph": {
+      "nodes": [],
+      "dimensions": {
+        "work": {
+          "score": 2,
+          "trend": "stable",
+          "lastActive": "2025-12-19T12:43:38.509Z"
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-19T12:43:38.509Z",
+        "createdAt": "2025-12-19T12:41:25.216Z"
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-19T12:43:38.509Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.14629747222222222,
+        "focus": 0.6,
+        "trust": 0.1299629747222222
+      },
+      "delta_hours": 0.02210222222222222
+    },
+    "timeline": [
+      {
+        "id": "evt_1766148218509",
+        "date": "2025-12-19T12:43:38.509Z",
+        "type": "NEW_BEGINNING",
+        "summary": "I finally started my new job today",
+        "dimension": "work",
+        "mood": "neutral",
+        "importance": "normal"
+      }
+    ]
   }
 }

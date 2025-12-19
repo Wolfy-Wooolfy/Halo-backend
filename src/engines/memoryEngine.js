@@ -2,7 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { normalizeMessage } = require("./messageNormalizer");
 const { updateSemanticGraph, createEmptyGraph } = require("./semanticMemoryEngine");
-const { getInitialLNNState, tickLNN } = require("./lnnEngine"); // Import LNN
+const { getInitialLNNState, tickLNN } = require("./lnnEngine");
+const { updateTimeline, getInitialTimeline } = require("./timelineEngine"); // ADDED
 
 // File persistence setup
 const DATA_DIR = path.join(__dirname, "../../data");
@@ -45,6 +46,7 @@ function buildPreview(text) {
 function buildDefaultMemory(userId) {
   return {
     userId: userId || "anonymous",
+    createdAt: new Date().toISOString(),
     lastMessage: "",
     lastMessagePreview: "",
     lastContext: null,
@@ -62,7 +64,10 @@ function buildDefaultMemory(userId) {
     semanticGraph: createEmptyGraph(),
     
     // V1.1 LIQUID NEURAL NETWORK
-    lnnState: getInitialLNNState()
+    lnnState: getInitialLNNState(),
+
+    // V1.2 EPISODIC TIMELINE (ADDED)
+    timeline: getInitialTimeline()
   };
 }
 
@@ -81,12 +86,12 @@ function getUserMemory(userId) {
     memoryStore[id] = buildDefaultMemory(id);
   }
   // Data Migration
-  if (!memoryStore[id].semanticGraph) {
-     memoryStore[id].semanticGraph = createEmptyGraph();
-  }
-  if (!memoryStore[id].lnnState) {
-     memoryStore[id].lnnState = getInitialLNNState();
-  }
+  if (!memoryStore[id].semanticGraph) memoryStore[id].semanticGraph = createEmptyGraph();
+  if (!memoryStore[id].lnnState) memoryStore[id].lnnState = getInitialLNNState();
+  if (!memoryStore[id].createdAt) memoryStore[id].createdAt = new Date().toISOString();
+  // Migration for Timeline
+  if (!memoryStore[id].timeline) memoryStore[id].timeline = getInitialTimeline();
+  
   return memoryStore[id];
 }
 
@@ -135,20 +140,34 @@ function updateUserMemory(payload) {
     text: normalizedMessage,
     context: finalContext,
     safety: finalSafety,
-    mood: mood
+    mood: mood,
+    userCreatedAt: current.createdAt
   });
-  
-  // Calculate semantic activation (did we hit a dimension?)
-  // We can infer this by checking if score changed, but for simplicity we pass 0 or 1
-  // In a deeper integration, semantic engine would return 'activationLevel'
-  const isSemanticActive = Object.values(updatedGraph.dimensions).some(d => d.lastActive === updatedGraph.meta.lastAnalysis);
+
+  // Check which dimension was active
+  let activeDimension = null;
+  // Simple heuristic: find dimension with matching lastActive time
+  for (const [key, val] of Object.entries(updatedGraph.dimensions)) {
+    if (val.lastActive === updatedGraph.meta.lastAnalysis) {
+      activeDimension = key;
+      break;
+    }
+  }
 
   // --- PHASE 2: LNN Tick ---
   const updatedLNN = tickLNN(current.lnnState, {
     context: finalContext,
     safety: finalSafety,
     messageLength: normalizedMessage.length,
-    semanticScore: isSemanticActive ? 1 : 0
+    semanticScore: activeDimension ? 1 : 0
+  });
+
+  // --- PHASE 2: Timeline Update (ADDED) ---
+  const updatedTimeline = updateTimeline(current.timeline, {
+    text: normalizedMessage,
+    mood: mood,
+    context: finalContext,
+    dimension: activeDimension
   });
 
   const updated = {
@@ -166,7 +185,8 @@ function updateUserMemory(payload) {
     hesitationSignal: muHesitation || !!current.hesitationSignal,
     
     semanticGraph: updatedGraph,
-    lnnState: updatedLNN
+    lnnState: updatedLNN,
+    timeline: updatedTimeline // Store
   };
 
   const newMoodEntry = {
@@ -196,8 +216,8 @@ function updateUserMemory(payload) {
     lastSafetyFlag: updated.lastSafetyFlag,
     lastTopic: updated.lastTopic,
     hesitationSignal: updated.hesitationSignal,
-    // Expose LNN delta for debug
-    lnnDelta: updatedLNN.delta_hours 
+    lnnDelta: updatedLNN.delta_hours,
+    timelineEvents: updatedTimeline.length // Debug
   };
 
   return {
