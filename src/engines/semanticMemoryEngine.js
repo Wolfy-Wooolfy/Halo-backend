@@ -1,6 +1,6 @@
 /**
- * HALO Semantic Memory Engine v1.1
- * Changes: Added Arabic Support & Expanded Keywords
+ * HALO Semantic Memory Engine v1.2
+ * Changes: Added default activation score for mentions to track frequency even in neutral moods.
  */
 
 const { normalizeText } = require("../utils/helpers");
@@ -24,7 +24,6 @@ const EMOTION_MAP = {
   "planning": "positive"
 };
 
-// V1.1: Added Arabic Keywords
 const DIMENSION_KEYWORDS = {
   [LIFE_DIMENSIONS.WORK]: [
     "shoghl", "work", "job", "boss", "manager", "deadline", "meeting", "career", "salary", "team", "project", "client",
@@ -90,11 +89,16 @@ function updateSemanticGraph(currentGraph, payload) {
 
   if (dimension) {
     const dimData = graph.dimensions[dimension];
+    
+    // IMPACT SCORE: Emotional weight
     const impact = (mood === "crisis" || mood === "stressed") ? -5 : 
                    (mood === "focused" || mood === "planning") ? +5 : 0;
     
-    dimData.score = Math.max(0, Math.min(100, dimData.score + impact));
-    if (impact !== 0) dimData.score += 2; // Activation bonus
+    // ACTIVATION SCORE: Just mentioning it adds importance (+2)
+    // This ensures we track "what they talk about" even if mood is neutral.
+    const activation = 2; 
+
+    dimData.score = Math.max(0, Math.min(100, dimData.score + impact + activation));
     dimData.lastActive = now;
   }
 
