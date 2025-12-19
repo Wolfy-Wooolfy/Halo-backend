@@ -73,6 +73,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/server.js
 
 ---
 
+#### inject_pattern.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/inject_pattern.js
+
+---
+
 ### 4.2 Client (halo-client)
 
 #### halo-client/index.html
@@ -179,6 +184,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engin
 
 #### timelineEngine.js
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/timelineEngine.js
+
+---
+
+#### patternEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/patternEngine.js
 
 ---
 

@@ -3,7 +3,8 @@ const path = require("path");
 const { normalizeMessage } = require("./messageNormalizer");
 const { updateSemanticGraph, createEmptyGraph } = require("./semanticMemoryEngine");
 const { getInitialLNNState, tickLNN } = require("./lnnEngine");
-const { updateTimeline, getInitialTimeline } = require("./timelineEngine"); // ADDED
+const { updateTimeline, getInitialTimeline } = require("./timelineEngine");
+const { analyzePatterns } = require("./patternEngine"); // ADDED
 
 // File persistence setup
 const DATA_DIR = path.join(__dirname, "../../data");
@@ -66,8 +67,11 @@ function buildDefaultMemory(userId) {
     // V1.1 LIQUID NEURAL NETWORK
     lnnState: getInitialLNNState(),
 
-    // V1.2 EPISODIC TIMELINE (ADDED)
-    timeline: getInitialTimeline()
+    // V1.2 EPISODIC TIMELINE
+    timeline: getInitialTimeline(),
+
+    // V1.3 BEHAVIORAL PATTERNS (ADDED)
+    patterns: []
   };
 }
 
@@ -89,8 +93,9 @@ function getUserMemory(userId) {
   if (!memoryStore[id].semanticGraph) memoryStore[id].semanticGraph = createEmptyGraph();
   if (!memoryStore[id].lnnState) memoryStore[id].lnnState = getInitialLNNState();
   if (!memoryStore[id].createdAt) memoryStore[id].createdAt = new Date().toISOString();
-  // Migration for Timeline
   if (!memoryStore[id].timeline) memoryStore[id].timeline = getInitialTimeline();
+  // Migration for Patterns
+  if (!memoryStore[id].patterns) memoryStore[id].patterns = [];
   
   return memoryStore[id];
 }
@@ -144,9 +149,7 @@ function updateUserMemory(payload) {
     userCreatedAt: current.createdAt
   });
 
-  // Check which dimension was active
   let activeDimension = null;
-  // Simple heuristic: find dimension with matching lastActive time
   for (const [key, val] of Object.entries(updatedGraph.dimensions)) {
     if (val.lastActive === updatedGraph.meta.lastAnalysis) {
       activeDimension = key;
@@ -162,13 +165,34 @@ function updateUserMemory(payload) {
     semanticScore: activeDimension ? 1 : 0
   });
 
-  // --- PHASE 2: Timeline Update (ADDED) ---
+  // --- PHASE 2: Timeline Update ---
   const updatedTimeline = updateTimeline(current.timeline, {
     text: normalizedMessage,
     mood: mood,
     context: finalContext,
     dimension: activeDimension
   });
+
+  // Update History & Memory Object FIRST (Needed for Pattern Analysis)
+  const newMoodEntry = {
+    at: new Date().toISOString(), // Use fresh timestamp
+    context: finalContext,
+    safetyFlag: finalSafety,
+    mood: mood
+  };
+
+  const history = Array.isArray(current.moodHistory)
+    ? [...current.moodHistory, newMoodEntry]
+    : [newMoodEntry];
+
+  // Keep history larger for pattern recognition (e.g., 100 entries)
+  if (history.length > 100) {
+    history.shift();
+  }
+
+  // --- PHASE 2: Pattern Recognition (ADDED) ---
+  // Analyze the updated history
+  const detectedPatterns = analyzePatterns(history);
 
   const updated = {
     ...current,
@@ -178,7 +202,7 @@ function updateUserMemory(payload) {
     lastLanguage: language,
     lastSafetyFlag: finalSafety,
     lastMood: mood,
-    lastUpdatedAt: new Date().toISOString(),
+    lastUpdatedAt: newMoodEntry.at,
     interactionCount: current.interactionCount + 1,
     lastTopic: muLastTopic ? muLastTopic : normalizeMessage(current.lastTopic),
     lastSignalCodes: nextSignalCodes,
@@ -186,27 +210,14 @@ function updateUserMemory(payload) {
     
     semanticGraph: updatedGraph,
     lnnState: updatedLNN,
-    timeline: updatedTimeline // Store
+    timeline: updatedTimeline,
+    moodHistory: history,
+    
+    // Store Patterns
+    patterns: detectedPatterns 
   };
 
-  const newMoodEntry = {
-    at: updated.lastUpdatedAt,
-    context: updated.lastContext,
-    safetyFlag: updated.lastSafetyFlag,
-    mood: updated.lastMood
-  };
-
-  const history = Array.isArray(current.moodHistory)
-    ? [...current.moodHistory, newMoodEntry]
-    : [newMoodEntry];
-
-  if (history.length > 50) {
-    history.shift();
-  }
-
-  updated.moodHistory = history;
   memoryStore[userId] = updated;
-
   saveMemoryToDisk();
 
   const delta = {
@@ -217,7 +228,7 @@ function updateUserMemory(payload) {
     lastTopic: updated.lastTopic,
     hesitationSignal: updated.hesitationSignal,
     lnnDelta: updatedLNN.delta_hours,
-    timelineEvents: updatedTimeline.length // Debug
+    newPatterns: detectedPatterns.length // Debug
   };
 
   return {

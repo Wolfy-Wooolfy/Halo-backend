@@ -484,5 +484,115 @@
         "importance": "normal"
       }
     ]
+  },
+  "pattern-test": {
+    "userId": "pattern-test",
+    "createdAt": "2025-12-19T14:09:17.810Z",
+    "lastMessage": "Do you notice anything about me?",
+    "lastMessagePreview": "Do you notice anything about me?",
+    "lastContext": "general",
+    "lastLanguage": "en",
+    "lastSafetyFlag": "none",
+    "lastMood": "neutral",
+    "lastUpdatedAt": "2025-12-19T14:18:49.463Z",
+    "interactionCount": 2,
+    "moodHistory": [
+      {
+        "at": "2025-12-05T19:00:00.000Z",
+        "mood": "stressed",
+        "context": "high_stress"
+      },
+      {
+        "at": "2025-12-12T19:00:00.000Z",
+        "mood": "stressed",
+        "context": "high_stress"
+      },
+      {
+        "at": "2025-12-19T18:00:00.000Z",
+        "mood": "stressed",
+        "context": "high_stress"
+      },
+      {
+        "at": "2025-12-19T18:30:00.000Z",
+        "mood": "stressed",
+        "context": "high_stress"
+      },
+      {
+        "at": "2025-12-19T14:18:49.463Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      }
+    ],
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "semanticGraph": {
+      "nodes": [],
+      "dimensions": {
+        "work": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "self": {
+          "score": 2,
+          "trend": "stable",
+          "lastActive": "2025-12-19T14:18:49.462Z"
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-19T14:18:49.462Z",
+        "createdAt": "2025-12-19T14:09:17.811Z"
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-19T14:18:49.463Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.08412094444444446,
+        "focus": 0.6,
+        "trust": 0.11984120944444444
+      },
+      "delta_hours": 0.15879055555555555
+    },
+    "timeline": [],
+    "patterns": [
+      {
+        "id": "pat_Friday_evening_stressed",
+        "type": "cyclical_mood",
+        "trigger": "Friday evening",
+        "effect": "stressed",
+        "confidence": 1,
+        "lastDetected": "2025-12-19T14:18:49.463Z"
+      }
+    ]
   }
 }
