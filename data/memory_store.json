@@ -41,7 +41,96 @@
     "last_emotion_label": null,
     "mood_history": [],
     "mindscan_log": [],
-    "last_active": "2025-12-18T12:21:29.162Z"
+    "last_active": "2025-12-18T12:21:29.162Z",
+    "semanticGraph": {
+      "nodes": [
+        {
+          "id": "general_emotional_discomfort",
+          "type": "SMU",
+          "label": "emotional_discomfort",
+          "dimension": "general",
+          "weight": 10,
+          "recurrence": 1,
+          "created": "2025-12-19T14:31:12.976Z",
+          "lastUpdated": "2025-12-19T14:31:12.976Z"
+        }
+      ],
+      "dimensions": {
+        "work": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-19T14:31:12.976Z",
+        "createdAt": "2025-12-19T14:31:09.564Z"
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-19T14:31:12.977Z",
+      "neurons": {
+        "stress": 0.6000000000000001,
+        "fatigue": 0.05,
+        "focus": 0.35,
+        "trust": 0.11
+      },
+      "delta_hours": 0.0009480555555555556
+    },
+    "createdAt": "2025-12-19T14:31:09.564Z",
+    "timeline": [],
+    "patterns": [],
+    "lastMessagePreview": "حاسس مخنوق",
+    "lastMessage": "حاسس مخنوق",
+    "lastContext": "emotional_discomfort",
+    "lastLanguage": "ar",
+    "lastSafetyFlag": "high_stress",
+    "lastMood": "stressed",
+    "lastUpdatedAt": "2025-12-19T14:31:12.977Z",
+    "interactionCount": null,
+    "lastTopic": "حاسس مخنوق",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "moodHistory": [
+      {
+        "at": "2025-12-19T14:31:12.977Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      }
+    ]
   },
   "anonymous": {
     "userId": "anonymous",

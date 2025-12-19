@@ -5,6 +5,8 @@ const { updateSemanticGraph, createEmptyGraph } = require("./semanticMemoryEngin
 const { getInitialLNNState, tickLNN } = require("./lnnEngine");
 const { updateTimeline, getInitialTimeline } = require("./timelineEngine");
 const { analyzePatterns } = require("./patternEngine"); // ADDED
+// FIX: Import buildPreview from shared helpers to enforce DRY
+const { buildPreview } = require("../utils/helpers");
 
 // File persistence setup
 const DATA_DIR = path.join(__dirname, "../../data");
@@ -38,11 +40,7 @@ function saveMemoryToDisk() {
   }
 }
 
-function buildPreview(text) {
-  const t = normalizeMessage(text).replace(/\s+/g, " ");
-  if (!t) return "";
-  return t.length > 80 ? t.slice(0, 80) : t;
-}
+// REMOVED: Local buildPreview definition. Uses src/utils/helpers.js version.
 
 function buildDefaultMemory(userId) {
   return {
