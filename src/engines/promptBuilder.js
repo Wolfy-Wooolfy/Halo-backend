@@ -219,6 +219,7 @@ function buildPolicyLayer(policy, route, language) {
 /**
  * PHASE 2 UPGRADE: LNN & Semantic Graph Injection
  * Extracts biological state and dominant life themes.
+ * NEW: Injects Behavioral Patterns & Episodic Timeline.
  */
 function buildMemorySummaryFromSnapshot(memory, language) {
   const isArabic = resolveLanguageCode(language) === "ar";
@@ -268,6 +269,47 @@ function buildMemorySummaryFromSnapshot(memory, language) {
       
     if (dims.length > 0) {
       parts.push(isArabic ? "أهم محاور الحياة المسيطرة: " + dims.join(", ") : "Dominant Life Themes: " + dims.join(", "));
+    }
+  }
+
+  // 4. Behavioral Patterns (Phase 2) - NEW
+  if (Array.isArray(memory.patterns) && memory.patterns.length > 0) {
+    const topPatterns = memory.patterns
+      .filter(p => p.confidence > 0.7) // Only high confidence
+      .slice(0, 2) // Top 2 only
+      .map(p => {
+        if (p.type === "cyclical_mood") {
+          return isArabic 
+            ? `نمط متكرر: المستخدم يميل للشعور بـ (${p.effect}) في وقت (${p.trigger})`
+            : `Pattern: User tends to feel (${p.effect}) at (${p.trigger})`;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (topPatterns.length > 0) {
+      parts.push(isArabic ? "أنماط سلوكية مكتشفة: " + topPatterns.join(" | ") : "Detected Behavioral Patterns: " + topPatterns.join(" | "));
+    }
+  }
+
+  // 5. Episodic Timeline (Phase 2) - NEW
+  if (Array.isArray(memory.timeline) && memory.timeline.length > 0) {
+    const now = new Date();
+    const recentEvents = memory.timeline
+      .filter(evt => {
+        const evtDate = new Date(evt.date);
+        const diffDays = (now - evtDate) / (1000 * 60 * 60 * 24);
+        return diffDays < 7; // Only last 7 days
+      })
+      .slice(-2) // Last 2 events
+      .map(evt => {
+        return isArabic
+          ? `حدث حديث (${evt.type}): ${evt.summary}`
+          : `Recent Event (${evt.type}): ${evt.summary}`;
+      });
+
+    if (recentEvents.length > 0) {
+      parts.push(isArabic ? "أحداث هامة مؤخرًا: " + recentEvents.join(" | ") : "Recent Significant Events: " + recentEvents.join(" | "));
     }
   }
 
@@ -353,7 +395,7 @@ function buildHaloPrompt(options) {
   const behaviorLayer = buildBehaviorLayer(language);
   const safetyLayer = buildSafetyLayer(safety, context, language);
   const policyLayer = buildPolicyLayer(policy, route, language);
-  // This now includes LNN & Semantic Data
+  // This now includes LNN, Semantic, Patterns & Timeline (Full Phase 2)
   const memorySummary = buildMemorySummaryFromSnapshot(memorySnapshot, language); 
   const taskSection = buildTaskSection(language);
   const outputFormatSection = buildOutputFormatSection(language);
