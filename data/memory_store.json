@@ -208,5 +208,179 @@
       },
       "delta_hours": 11.000294444444444
     }
+  },
+  "growth-test-user": {
+    "userId": "growth-test-user",
+    "lastMessage": "????? ??? ?? ???? ?????",
+    "lastMessagePreview": "????? ??? ?? ???? ?????",
+    "lastContext": "general",
+    "lastLanguage": "en",
+    "lastSafetyFlag": "none",
+    "lastMood": "neutral",
+    "lastUpdatedAt": "2025-12-19T12:32:45.034Z",
+    "interactionCount": 3,
+    "moodHistory": [
+      {
+        "at": "2025-12-19T12:28:20.923Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T12:31:00.262Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T12:32:45.034Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      }
+    ],
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "semanticGraph": {
+      "nodes": [],
+      "dimensions": {
+        "work": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-19T12:32:45.034Z",
+        "createdAt": "2025-12-19T12:28:18.498Z"
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-19T12:32:45.034Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.14266358333333334,
+        "focus": 0.5,
+        "trust": 0.12992663583333333
+      },
+      "delta_hours": 0.029103333333333332
+    }
+  },
+  "growth-test-en": {
+    "userId": "growth-test-en",
+    "lastMessage": "The work is never ending",
+    "lastMessagePreview": "The work is never ending",
+    "lastContext": "general",
+    "lastLanguage": "en",
+    "lastSafetyFlag": "none",
+    "lastMood": "neutral",
+    "lastUpdatedAt": "2025-12-19T12:34:11.339Z",
+    "interactionCount": 2,
+    "moodHistory": [
+      {
+        "at": "2025-12-19T12:34:04.623Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T12:34:11.339Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      }
+    ],
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "semanticGraph": {
+      "nodes": [],
+      "dimensions": {
+        "work": {
+          "score": 4,
+          "trend": "stable",
+          "lastActive": "2025-12-19T12:34:11.339Z"
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-19T12:34:11.339Z",
+        "createdAt": "2025-12-19T12:34:03.471Z"
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-19T12:34:11.339Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.09981344444444445,
+        "focus": 0.6998134444444444,
+        "trust": 0.11999813444444445
+      },
+      "delta_hours": 0.0018655555555555556
+    }
   }
 }
