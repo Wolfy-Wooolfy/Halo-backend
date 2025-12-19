@@ -95,7 +95,9 @@ function asArray(val) {
 
 function updateUserMemory(payload) {
   const userId = payload.userId || "anonymous";
-  const normalizedMessage = payload.normalizedMessage || "";
+  // FIX: Accept both 'normalizedMessage' AND 'message' to prevent empty text bug
+  const normalizedMessage = payload.normalizedMessage || payload.message || "";
+  
   const context = payload.context || "general";
   const language = payload.language || "en";
   const safetyFlag = payload.safetyFlag || "none";
@@ -124,6 +126,7 @@ function updateUserMemory(payload) {
   ).slice(0, 30);
 
   // --- PHASE 2 UPGRADE: Update Semantic Graph ---
+  // Now normalizedMessage is guaranteed to have the text
   const updatedGraph = updateSemanticGraph(current.semanticGraph, {
     text: normalizedMessage,
     context: finalContext,
@@ -135,7 +138,6 @@ function updateUserMemory(payload) {
   const updated = {
     ...current,
     lastMessagePreview: preview,
-    // Note: We avoid storing full text if possible, using preview
     lastMessage: preview, 
     lastContext: finalContext,
     lastLanguage: language,

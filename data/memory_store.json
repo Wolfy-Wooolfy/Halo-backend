@@ -116,11 +116,17 @@
     "lastLanguage": "ar",
     "lastSafetyFlag": "none",
     "lastMood": "neutral",
-    "lastUpdatedAt": "2025-12-19T01:00:33.859Z",
-    "interactionCount": 1,
+    "lastUpdatedAt": "2025-12-19T01:04:28.814Z",
+    "interactionCount": 2,
     "moodHistory": [
       {
         "at": "2025-12-19T01:00:33.859Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-19T01:04:28.814Z",
         "context": "general",
         "safetyFlag": "none",
         "mood": "neutral"
@@ -134,7 +140,8 @@
       "dimensions": {
         "work": {
           "score": 0,
-          "trend": "stable"
+          "trend": "stable",
+          "lastActive": "2025-12-19T01:04:28.813Z"
         },
         "self": {
           "score": 0,
