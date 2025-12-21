@@ -522,4 +522,12 @@ Before proposing or providing ANY code modification:
 
 ---
 
+## 13) Code Integrity & Anti-Truncation Protocol (Strict)
+- **Mandatory Fetching:** Before proposing any change to a file exceeding 50 lines, the assistant MUST use the `File Fetcher` tool to retrieve the RAW content. Relying on chat history for code modification is strictly forbidden.
+- **Zero Truncation Policy:** When returning a modified file, the assistant MUST provide the FULL content from the first to the last line. Using placeholders like `// ... rest of code` is a violation of this contract.
+- **Functional Preservation:** Every modification must preserve all existing imports, exports, and logic unless explicitly instructed to remove them.
+- **Pre-Flight Validation:** Every response containing code must include a specific test command (Verification Plan) to verify that both old and new functionalities are intact.
+
+---
+
 ## END OF CONTRACT

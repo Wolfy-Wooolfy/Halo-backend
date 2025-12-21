@@ -4,8 +4,7 @@ const { normalizeMessage } = require("./messageNormalizer");
 const { updateSemanticGraph, createEmptyGraph } = require("./semanticMemoryEngine");
 const { getInitialLNNState, tickLNN } = require("./lnnEngine");
 const { updateTimeline, getInitialTimeline } = require("./timelineEngine");
-const { analyzePatterns } = require("./patternEngine"); // ADDED
-// FIX: Import buildPreview from shared helpers to enforce DRY
+const { analyzePatterns } = require("./patternEngine");
 const { buildPreview } = require("../utils/helpers");
 
 // File persistence setup
@@ -40,8 +39,6 @@ function saveMemoryToDisk() {
   }
 }
 
-// REMOVED: Local buildPreview definition. Uses src/utils/helpers.js version.
-
 function buildDefaultMemory(userId) {
   return {
     userId: userId || "anonymous",
@@ -68,7 +65,7 @@ function buildDefaultMemory(userId) {
     // V1.2 EPISODIC TIMELINE
     timeline: getInitialTimeline(),
 
-    // V1.3 BEHAVIORAL PATTERNS (ADDED)
+    // V1.3 BEHAVIORAL PATTERNS
     patterns: []
   };
 }
@@ -87,12 +84,14 @@ function getUserMemory(userId) {
   if (!memoryStore[id]) {
     memoryStore[id] = buildDefaultMemory(id);
   }
-  // Data Migration
+  // Data Migration for Phase 2 & Trust Architecture
   if (!memoryStore[id].semanticGraph) memoryStore[id].semanticGraph = createEmptyGraph();
+  if (memoryStore[id].semanticGraph.meta.globalTrustScore === undefined) {
+    memoryStore[id].semanticGraph.meta.globalTrustScore = 50;
+  }
   if (!memoryStore[id].lnnState) memoryStore[id].lnnState = getInitialLNNState();
   if (!memoryStore[id].createdAt) memoryStore[id].createdAt = new Date().toISOString();
   if (!memoryStore[id].timeline) memoryStore[id].timeline = getInitialTimeline();
-  // Migration for Patterns
   if (!memoryStore[id].patterns) memoryStore[id].patterns = [];
   
   return memoryStore[id];
@@ -131,14 +130,13 @@ function updateUserMemory(payload) {
   const finalSafety = muLastSafetyFlag ? muLastSafetyFlag : safetyFlag;
 
   const mood = deriveMood(finalContext, finalSafety);
-
   const preview = muPreview ? muPreview : buildPreview(normalizedMessage);
 
   const nextSignalCodes = Array.from(
     new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
   ).slice(0, 30);
 
-  // --- PHASE 2: Semantic Graph ---
+  // --- PHASE 2: Semantic Graph with Trust ---
   const updatedGraph = updateSemanticGraph(current.semanticGraph, {
     text: normalizedMessage,
     context: finalContext,
@@ -171,9 +169,8 @@ function updateUserMemory(payload) {
     dimension: activeDimension
   });
 
-  // Update History & Memory Object FIRST (Needed for Pattern Analysis)
   const newMoodEntry = {
-    at: new Date().toISOString(), // Use fresh timestamp
+    at: new Date().toISOString(),
     context: finalContext,
     safetyFlag: finalSafety,
     mood: mood
@@ -183,13 +180,11 @@ function updateUserMemory(payload) {
     ? [...current.moodHistory, newMoodEntry]
     : [newMoodEntry];
 
-  // Keep history larger for pattern recognition (e.g., 100 entries)
   if (history.length > 100) {
     history.shift();
   }
 
-  // --- PHASE 2: Pattern Recognition (ADDED) ---
-  // Analyze the updated history
+  // --- PHASE 2: Pattern Recognition ---
   const detectedPatterns = analyzePatterns(history);
 
   const updated = {
@@ -210,28 +205,21 @@ function updateUserMemory(payload) {
     lnnState: updatedLNN,
     timeline: updatedTimeline,
     moodHistory: history,
-    
-    // Store Patterns
     patterns: detectedPatterns 
   };
 
   memoryStore[userId] = updated;
   saveMemoryToDisk();
 
-  const delta = {
-    userId,
-    interactionCount: updated.interactionCount,
-    lastMood: updated.lastMood,
-    lastSafetyFlag: updated.lastSafetyFlag,
-    lastTopic: updated.lastTopic,
-    hesitationSignal: updated.hesitationSignal,
-    lnnDelta: updatedLNN.delta_hours,
-    newPatterns: detectedPatterns.length // Debug
-  };
-
   return {
     memory: updated,
-    delta
+    delta: {
+      userId,
+      interactionCount: updated.interactionCount,
+      lastMood: updated.lastMood,
+      lastTopic: updated.lastTopic,
+      newPatterns: detectedPatterns.length
+    }
   };
 }
 

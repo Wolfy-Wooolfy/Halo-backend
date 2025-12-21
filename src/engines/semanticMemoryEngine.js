@@ -1,10 +1,18 @@
 /**
- * HALO Semantic Memory Engine v1.3
- * Implements: SMUs, Life Dimensions, Arabic Support, Growth Protocol, Smart Forgetting
- * Source: HALO - Memory System — Growth + Semantic Engine.md
+ * HALO Semantic Memory Engine v1.4 (Trust-Enabled)
+ * Implements: SMUs, Life Dimensions, Arabic Support, Growth Protocol, Smart Forgetting, Trust Layers
+ * Source: HALO - Memory System — Growth + Semantic Engine.md & Human-Centric Memory & Trust Architecture.md
  */
 
 const { normalizeText } = require("../utils/helpers");
+
+// SECTION: Trust Architecture Layers
+const TRUST_LEVELS = {
+  IDENTITY: "identity",   // Permanent core facts (Name, constants)
+  CONTEXTUAL: "context", // High relevance to current situation
+  LOGICAL: "logical",    // Inferred patterns from history
+  EMOTIONAL: "emotional" // Volatile/State-based, decays fast
+};
 
 // SECTION 3.4: Life Dimension Anchors
 const LIFE_DIMENSIONS = {
@@ -69,7 +77,8 @@ function createEmptyGraph() {
       stage: "seed",
       stageLabel: "Seed Layer",
       lastAnalysis: new Date().toISOString(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      globalTrustScore: 50 // Default trust for new profiles
     }
   };
 }
@@ -84,12 +93,8 @@ function detectDimension(text) {
   return null;
 }
 
-/**
- * Determine Memory Stage based on User Age (Days)
- */
 function determineStage(createdAt) {
   if (!createdAt) return MEMORY_STAGES.SEED;
-  
   const created = new Date(createdAt);
   const now = new Date();
   const diffTime = Math.abs(now - created);
@@ -102,86 +107,89 @@ function determineStage(createdAt) {
 }
 
 /**
- * SECTION 9: Smart Forgetting System
- * Removes weak nodes and decays dimension scores.
+ * SECTION 9: Smart Forgetting System (Trust-Enhanced)
  */
 function applySmartForgetting(graph) {
   const now = new Date();
   
-  // 1. Prune Weak Semantic Nodes (SMUs)
-  // Rule: If weight < 15 AND not updated in 7 days -> Remove
+  // 1. Prune nodes based on weight AND trust level
   graph.nodes = graph.nodes.filter(node => {
     const lastUpdate = new Date(node.lastUpdated);
     const ageDays = (now - lastUpdate) / (1000 * 60 * 60 * 24);
     
-    if (node.weight < 15 && ageDays > 7) {
-      return false; // Forget
+    // IDENTITY nodes are never forgotten automatically
+    if (node.trustLevel === TRUST_LEVELS.IDENTITY) return true;
+    
+    // EMOTIONAL nodes decay much faster (3 days threshold)
+    const decayThreshold = node.trustLevel === TRUST_LEVELS.EMOTIONAL ? 3 : 7;
+    
+    if (node.weight < 15 && ageDays > decayThreshold) {
+      return false; // Forget weak/old nodes
     }
-    return true; // Keep
+    return true; 
   });
 
   // 2. Decay Dimension Scores
-  // Rule: If not active for 3 days, decay score by 10%
   for (const dimKey in graph.dimensions) {
     const dim = graph.dimensions[dimKey];
     if (dim.lastActive) {
       const lastActive = new Date(dim.lastActive);
       const inactivityDays = (now - lastActive) / (1000 * 60 * 60 * 24);
-      
       if (inactivityDays > 3 && dim.score > 0) {
         dim.score = Math.floor(dim.score * 0.9);
       }
     }
   }
-  
   return graph;
 }
 
 function updateSemanticGraph(currentGraph, payload) {
   let graph = currentGraph || createEmptyGraph();
-  const { text, context, safety, mood, userCreatedAt } = payload;
+  const { text, context, mood, userCreatedAt } = payload;
   const now = new Date().toISOString();
 
-  // 1. Determine Growth Stage
+  // 1. Growth Stage
   const currentStage = determineStage(userCreatedAt || graph.meta.createdAt);
   graph.meta.stage = currentStage.id;
   graph.meta.stageLabel = currentStage.label;
 
-  // 2. Detect Dimension
+  // 2. Dimension Detection
   const dimension = detectDimension(text);
-
   if (dimension) {
     const dimData = graph.dimensions[dimension];
-    
-    // Impact Score (Emotional Weight)
     const impact = (mood === "crisis" || mood === "stressed") ? -5 : 
                    (mood === "focused" || mood === "planning") ? +5 : 0;
-    
-    // Activation Bonus (Mentioning it matters)
-    const activation = 2;
-
-    dimData.score = Math.max(0, Math.min(100, dimData.score + impact + activation));
+    dimData.score = Math.max(0, Math.min(100, dimData.score + impact + 2));
     dimData.lastActive = now;
   }
 
-  // 3. Create/Update SMU Node
+  // 3. SMU Node Update with Trust Layers
   if (context && context !== "general") {
     const nodeId = `${dimension || "general"}_${context}`;
     const existingNode = graph.nodes.find(n => n.id === nodeId);
 
+    // Determine trust level based on context type
+    let determinedTrust = TRUST_LEVELS.CONTEXTUAL;
+    if (context === "identity_fact" || context === "name_mention") determinedTrust = TRUST_LEVELS.IDENTITY;
+    if (mood === "crisis" || mood === "stressed") determinedTrust = TRUST_LEVELS.EMOTIONAL;
+
     if (existingNode) {
-      // Reinforce: +5 for repetition (Section 7)
       existingNode.weight = Math.min(100, existingNode.weight + 5);
       existingNode.recurrence += 1;
       existingNode.lastUpdated = now;
+      
+      // Promotion: Emotional observations that repeat 5+ times become Logical patterns
+      if (existingNode.recurrence > 5 && existingNode.trustLevel === TRUST_LEVELS.EMOTIONAL) {
+        existingNode.trustLevel = TRUST_LEVELS.LOGICAL;
+      }
     } else {
-      // Create new seed
       graph.nodes.push({
         id: nodeId,
         type: "SMU",
         label: context,
         dimension: dimension || "general",
-        weight: 10, // Initial seed
+        weight: 10, 
+        trustLevel: determinedTrust,
         recurrence: 1,
         created: now,
         lastUpdated: now
@@ -189,10 +197,9 @@ function updateSemanticGraph(currentGraph, payload) {
     }
   }
 
-  // 4. Apply Maintenance (Forgetting & Limits)
+  // 4. Maintenance
   graph = applySmartForgetting(graph);
 
-  // Cap nodes strictly (Keep top 50 strongest)
   if (graph.nodes.length > 50) {
     graph.nodes.sort((a, b) => b.weight - a.weight);
     graph.nodes = graph.nodes.slice(0, 50);
@@ -205,5 +212,6 @@ function updateSemanticGraph(currentGraph, payload) {
 module.exports = {
   createEmptyGraph,
   updateSemanticGraph,
-  LIFE_DIMENSIONS
+  LIFE_DIMENSIONS,
+  TRUST_LEVELS
 };
