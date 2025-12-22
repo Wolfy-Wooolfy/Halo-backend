@@ -8,11 +8,17 @@
     "lastLanguage": "ar",
     "lastSafetyFlag": "high_stress",
     "lastMood": "stressed",
-    "lastUpdatedAt": "2025-12-22T13:58:12.327Z",
-    "interactionCount": 1,
+    "lastUpdatedAt": "2025-12-22T14:02:31.099Z",
+    "interactionCount": 2,
     "moodHistory": [
       {
         "at": "2025-12-22T13:58:12.327Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      },
+      {
+        "at": "2025-12-22T14:02:31.099Z",
         "context": "emotional_discomfort",
         "safetyFlag": "high_stress",
         "mood": "stressed"
@@ -28,11 +34,11 @@
           "type": "SMU",
           "label": "emotional_discomfort",
           "dimension": "general",
-          "weight": 10,
+          "weight": 15,
           "trustLevel": "emotional",
-          "recurrence": 1,
+          "recurrence": 2,
           "created": "2025-12-22T13:58:12.325Z",
-          "lastUpdated": "2025-12-22T13:58:12.325Z"
+          "lastUpdated": "2025-12-22T14:02:31.093Z"
         }
       ],
       "dimensions": {
@@ -75,20 +81,20 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-22T13:58:12.325Z",
+        "lastAnalysis": "2025-12-22T14:02:31.093Z",
         "createdAt": "2025-12-22T13:58:08.966Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-22T13:58:12.326Z",
+      "lastTick": "2025-12-22T14:02:31.098Z",
       "neurons": {
-        "stress": 0.6000000000000001,
-        "fatigue": 0.05,
-        "focus": 0.35,
-        "trust": 0.11
+        "stress": 1,
+        "fatigue": 0.09281188888888889,
+        "focus": 0.2071881111111111,
+        "trust": 0.11992811888888888
       },
-      "delta_hours": 0.0009333333333333333
+      "delta_hours": 0.07188111111111112
     },
     "timeline": [],
     "patterns": []

@@ -98,7 +98,6 @@ async function handleChat(req, res) {
 
   try {
     const body = req.body || {};
-    // FIX: Support both user_id (Snake) and userId (Camel)
     userId = body.user_id || body.userId || "anonymous";
     
     rawMessage = body.message || "";
