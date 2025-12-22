@@ -1140,5 +1140,105 @@
       }
     ],
     "patterns": []
+  },
+  "test-user-1": {
+    "userId": "test-user-1",
+    "createdAt": "2025-12-22T13:44:33.123Z",
+    "lastMessage": "أنا حاسس اني تايه وعندي شغل كتير مش عارف ابدأ منين.",
+    "lastMessagePreview": "أنا حاسس اني تايه وعندي شغل كتير مش عارف ابدأ منين.",
+    "lastContext": "emotional_discomfort",
+    "lastLanguage": "ar",
+    "lastSafetyFlag": "high_stress",
+    "lastMood": "stressed",
+    "lastUpdatedAt": "2025-12-22T13:47:56.393Z",
+    "interactionCount": 2,
+    "moodHistory": [
+      {
+        "at": "2025-12-22T13:44:35.869Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      },
+      {
+        "at": "2025-12-22T13:47:56.393Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      }
+    ],
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "semanticGraph": {
+      "nodes": [
+        {
+          "id": "work_emotional_discomfort",
+          "type": "SMU",
+          "label": "emotional_discomfort",
+          "dimension": "work",
+          "weight": 15,
+          "trustLevel": "emotional",
+          "recurrence": 2,
+          "created": "2025-12-22T13:44:35.867Z",
+          "lastUpdated": "2025-12-22T13:47:56.392Z"
+        }
+      ],
+      "dimensions": {
+        "work": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": "2025-12-22T13:47:56.392Z"
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-22T13:47:56.392Z",
+        "createdAt": "2025-12-22T13:44:33.123Z",
+        "globalTrustScore": 50
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-22T13:47:56.393Z",
+      "neurons": {
+        "stress": 1,
+        "fatigue": 0.09442986111111112,
+        "focus": 0.40557013888888893,
+        "trust": 0.11994429861111111
+      },
+      "delta_hours": 0.05570138888888889
+    },
+    "timeline": [],
+    "patterns": []
   }
 }
