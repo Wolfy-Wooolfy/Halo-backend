@@ -216,6 +216,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/utils
 
 ---
 
+#### src/utils/constants.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/utils/constants.js
+
+---
+
 ### 4.8 Local Runtime Config (Non-GitHub, Runtime-Authoritative)
 
 > This file is typically **NOT committed** to GitHub for security, but it is **runtime-authoritative** for local execution.

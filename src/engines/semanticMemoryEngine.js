@@ -4,7 +4,8 @@
  * Source: HALO - Memory System — Growth + Semantic Engine.md & Human-Centric Memory & Trust Architecture.md
  */
 
-const { normalizeText } = require("../utils/helpers");
+// FIX: Import normalizeMessage directly, as normalizeText was removed from helpers.
+const { normalizeMessage } = require("./messageNormalizer");
 
 // SECTION: Trust Architecture Layers
 const TRUST_LEVELS = {
@@ -84,7 +85,8 @@ function createEmptyGraph() {
 }
 
 function detectDimension(text) {
-  const normalized = normalizeText(text);
+  // Use normalizeMessage instead of the removed normalizeText
+  const normalized = normalizeMessage(text);
   for (const [dim, keywords] of Object.entries(DIMENSION_KEYWORDS)) {
     if (keywords.some(k => normalized.includes(k))) {
       return dim;

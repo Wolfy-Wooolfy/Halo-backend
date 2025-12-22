@@ -1,4 +1,5 @@
 const { normalizeMessage } = require("./messageNormalizer");
+const KEYWORDS = require("../utils/constants");
 
 function normalizeForClassification(text) {
   if (!text) return '';
@@ -27,61 +28,12 @@ function classifyMessage(rawText) {
     };
   }
 
-  const emotionalWords = [
-    'tired',
-    'exhausted',
-    'overwhelmed',
-    'burnout',
-    'anxiety',
-    'anxious',
-    'lost',
-    'depressed',
-    'scared',
-    'afraid',
-    'pressure',
-    'stressed',
-    'تعبان',
-    'مرهق',
-    'مخنوق',
-    'متضايق',
-    'تايه',
-    'قلقان',
-    'خايف',
-    'مكتئب',
-    'مش قادر',
-    'كله فوق دماغي'
-  ];
-
-  const decisionWords = [
-    'decide',
-    'decision',
-    'choice',
-    'choose',
-    'should i',
-    'اعمل ايه',
-    'اعمل ايه؟',
-    'اعمل ايه انا',
-    'اعمل ايه دلوقتي',
-    'اختر',
-    'اختار',
-    'قرار',
-    'اختيار'
-  ];
-
-  const greetingWords = [
-    'hi',
-    'hello',
-    'hey',
-    'السلام',
-    'سلام',
-    'ازيك',
-    'ازيك؟',
-    'ازيكم',
-    'اهلا',
-    'اهلاً',
-    'مرحبا',
-    'مرحبا'
-  ];
+  // Combine AR and EN stress markers for broad classification
+  // This ensures consistency with RoutingEngine which uses the same source
+  const emotionalWords = [...KEYWORDS.STRESS.ar, ...KEYWORDS.STRESS.en];
+  
+  const decisionWords = KEYWORDS.DECISION;
+  const greetingWords = KEYWORDS.GREETINGS;
 
   const isGreeting = containsAny(normalized, greetingWords) && length < 60;
   const hasEmotional = containsAny(normalized, emotionalWords);

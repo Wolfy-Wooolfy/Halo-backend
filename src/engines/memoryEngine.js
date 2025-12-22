@@ -31,11 +31,35 @@ if (fs.existsSync(MEMORY_FILE)) {
   }
 }
 
-function saveMemoryToDisk() {
+// Async Save State Flags
+let isSaving = false;
+let saveQueued = false;
+
+/**
+ * Saves memory to disk asynchronously with a queue mechanism.
+ * This prevents blocking the Event Loop and ensures data integrity during rapid updates.
+ */
+async function saveMemoryToDisk() {
+  // If a save is already in progress, mark a queue flag to run again immediately after.
+  if (isSaving) {
+    saveQueued = true;
+    return;
+  }
+
+  isSaving = true;
+
   try {
-    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memoryStore, null, 2));
+    // Use fs.promises for non-blocking I/O
+    await fs.promises.writeFile(MEMORY_FILE, JSON.stringify(memoryStore, null, 2));
   } catch (err) {
     console.error("[MemoryEngine] Failed to save memory:", err);
+  } finally {
+    isSaving = false;
+    // If a new change happened while we were writing, save again to capture latest state
+    if (saveQueued) {
+      saveQueued = false;
+      saveMemoryToDisk();
+    }
   }
 }
 
@@ -209,6 +233,8 @@ function updateUserMemory(payload) {
   };
 
   memoryStore[userId] = updated;
+  
+  // Trigger async save (fire and forget from the caller's perspective)
   saveMemoryToDisk();
 
   return {
