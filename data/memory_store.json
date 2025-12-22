@@ -14,45 +14,19 @@
         "word": "مخنوق"
       }
     ],
-    "last_active": "2025-12-18T12:02:10.306Z"
-  },
-  "test-user-scan-en": {
-    "user_id": "test-user-scan-en",
-    "created_at": "2025-12-18T12:02:10.375Z",
-    "interaction_count": 1,
-    "last_topic": null,
-    "last_emotion_label": null,
-    "mood_history": [
-      "[2025-12-18] Overwhelmed"
-    ],
-    "mindscan_log": [
-      {
-        "date": "2025-12-18",
-        "word": "Overwhelmed"
-      }
-    ],
-    "last_active": "2025-12-18T12:02:10.375Z"
-  },
-  "contract-test-user": {
-    "user_id": "contract-test-user",
-    "created_at": "2025-12-18T12:21:29.160Z",
-    "interaction_count": 1,
-    "last_topic": "حاسس مخنوق",
-    "last_emotion_label": null,
-    "mood_history": [],
-    "mindscan_log": [],
-    "last_active": "2025-12-18T12:21:29.162Z",
+    "last_active": "2025-12-18T12:02:10.306Z",
     "semanticGraph": {
       "nodes": [
         {
-          "id": "general_emotional_discomfort",
+          "id": "general_mindscan_log",
           "type": "SMU",
-          "label": "emotional_discomfort",
+          "label": "mindscan_log",
           "dimension": "general",
-          "weight": 50,
-          "recurrence": 9,
-          "created": "2025-12-19T14:31:12.976Z",
-          "lastUpdated": "2025-12-22T12:54:32.432Z"
+          "weight": 10,
+          "trustLevel": "context",
+          "recurrence": 1,
+          "created": "2025-12-22T13:34:24.988Z",
+          "lastUpdated": "2025-12-22T13:34:24.988Z"
         }
       ],
       "dimensions": {
@@ -95,20 +69,228 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-22T12:54:32.432Z",
+        "lastAnalysis": "2025-12-22T13:34:24.988Z",
+        "createdAt": "2025-12-22T13:34:24.987Z",
+        "globalTrustScore": 50
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-22T13:34:24.989Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.05,
+        "focus": 0.5,
+        "trust": 0.11
+      },
+      "delta_hours": 5.555555555555555e-7
+    },
+    "createdAt": "2025-12-22T13:34:24.987Z",
+    "timeline": [],
+    "patterns": [],
+    "lastMessagePreview": "مخنوق",
+    "lastMessage": "مخنوق",
+    "lastContext": "mindscan_log",
+    "lastLanguage": "ar",
+    "lastSafetyFlag": "none",
+    "lastMood": "neutral",
+    "lastUpdatedAt": "2025-12-22T13:34:24.990Z",
+    "interactionCount": null,
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "moodHistory": [
+      {
+        "at": "2025-12-22T13:34:24.990Z",
+        "context": "mindscan_log",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      }
+    ]
+  },
+  "test-user-scan-en": {
+    "user_id": "test-user-scan-en",
+    "created_at": "2025-12-18T12:02:10.375Z",
+    "interaction_count": 1,
+    "last_topic": null,
+    "last_emotion_label": null,
+    "mood_history": [
+      "[2025-12-18] Overwhelmed"
+    ],
+    "mindscan_log": [
+      {
+        "date": "2025-12-18",
+        "word": "Overwhelmed"
+      }
+    ],
+    "last_active": "2025-12-18T12:02:10.375Z",
+    "semanticGraph": {
+      "nodes": [
+        {
+          "id": "self_mindscan_log",
+          "type": "SMU",
+          "label": "mindscan_log",
+          "dimension": "self",
+          "weight": 10,
+          "trustLevel": "context",
+          "recurrence": 1,
+          "created": "2025-12-22T13:34:25.039Z",
+          "lastUpdated": "2025-12-22T13:34:25.039Z"
+        }
+      ],
+      "dimensions": {
+        "work": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "self": {
+          "score": 2,
+          "trend": "stable",
+          "lastActive": "2025-12-22T13:34:25.039Z"
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-22T13:34:25.039Z",
+        "createdAt": "2025-12-22T13:34:25.039Z",
+        "globalTrustScore": 50
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-22T13:34:25.039Z",
+      "neurons": {
+        "stress": 0,
+        "fatigue": 0.05,
+        "focus": 0.6,
+        "trust": 0.11
+      },
+      "delta_hours": 0
+    },
+    "createdAt": "2025-12-22T13:34:25.039Z",
+    "timeline": [],
+    "patterns": [],
+    "lastMessagePreview": "Overwhelmed",
+    "lastMessage": "Overwhelmed",
+    "lastContext": "mindscan_log",
+    "lastLanguage": "en",
+    "lastSafetyFlag": "none",
+    "lastMood": "neutral",
+    "lastUpdatedAt": "2025-12-22T13:34:25.039Z",
+    "interactionCount": null,
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "moodHistory": [
+      {
+        "at": "2025-12-22T13:34:25.039Z",
+        "context": "mindscan_log",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      }
+    ]
+  },
+  "contract-test-user": {
+    "user_id": "contract-test-user",
+    "created_at": "2025-12-18T12:21:29.160Z",
+    "interaction_count": 1,
+    "last_topic": "حاسس مخنوق",
+    "last_emotion_label": null,
+    "mood_history": [],
+    "mindscan_log": [],
+    "last_active": "2025-12-18T12:21:29.162Z",
+    "semanticGraph": {
+      "nodes": [
+        {
+          "id": "general_emotional_discomfort",
+          "type": "SMU",
+          "label": "emotional_discomfort",
+          "dimension": "general",
+          "weight": 55,
+          "recurrence": 10,
+          "created": "2025-12-19T14:31:12.976Z",
+          "lastUpdated": "2025-12-22T13:18:21.743Z"
+        }
+      ],
+      "dimensions": {
+        "work": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-22T13:18:21.743Z",
         "createdAt": "2025-12-19T14:31:09.564Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-22T12:54:32.437Z",
+      "lastTick": "2025-12-22T13:18:21.746Z",
       "neurons": {
         "stress": 1,
-        "fatigue": 0.11142586111111112,
-        "focus": 0.0885741388888889,
-        "trust": 0.13270643972222224
+        "fatigue": 0.12172283333333335,
+        "focus": 0,
+        "trust": 0.14230940944444448
       },
-      "delta_hours": 0.30888
+      "delta_hours": 0.3970302777777778
     },
     "createdAt": "2025-12-19T14:31:09.564Z",
     "timeline": [],
@@ -119,7 +301,7 @@
         "trigger": "Friday afternoon",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-22T12:54:32.440Z"
+        "lastDetected": "2025-12-22T13:18:21.747Z"
       },
       {
         "id": "pat_Sunday_morning_stressed",
@@ -127,7 +309,7 @@
         "trigger": "Sunday morning",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-22T12:54:32.440Z"
+        "lastDetected": "2025-12-22T13:18:21.747Z"
       },
       {
         "id": "pat_Monday_afternoon_stressed",
@@ -135,7 +317,7 @@
         "trigger": "Monday afternoon",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-22T12:54:32.440Z"
+        "lastDetected": "2025-12-22T13:18:21.747Z"
       }
     ],
     "lastMessagePreview": "حاسس مخنوق",
@@ -144,8 +326,8 @@
     "lastLanguage": "ar",
     "lastSafetyFlag": "high_stress",
     "lastMood": "stressed",
-    "lastUpdatedAt": "2025-12-22T12:54:32.438Z",
-    "interactionCount": 8,
+    "lastUpdatedAt": "2025-12-22T13:18:21.746Z",
+    "interactionCount": 9,
     "lastTopic": "حاسس مخنوق",
     "lastSignalCodes": [],
     "hesitationSignal": false,
@@ -200,6 +382,12 @@
       },
       {
         "at": "2025-12-22T12:54:32.438Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      },
+      {
+        "at": "2025-12-22T13:18:21.746Z",
         "context": "emotional_discomfort",
         "safetyFlag": "high_stress",
         "mood": "stressed"
@@ -857,6 +1045,98 @@
         "dimension": "work",
         "mood": "neutral",
         "importance": "normal"
+      }
+    ],
+    "patterns": []
+  },
+  "emergency-test-user": {
+    "userId": "emergency-test-user",
+    "createdAt": "2025-12-22T13:18:37.091Z",
+    "lastMessage": "عايز اموت",
+    "lastMessagePreview": "عايز اموت",
+    "lastContext": "general",
+    "lastLanguage": "ar",
+    "lastSafetyFlag": "high_risk",
+    "lastMood": "crisis",
+    "lastUpdatedAt": "2025-12-22T13:18:37.653Z",
+    "interactionCount": 1,
+    "moodHistory": [
+      {
+        "at": "2025-12-22T13:18:37.653Z",
+        "context": "general",
+        "safetyFlag": "high_risk",
+        "mood": "crisis"
+      }
+    ],
+    "lastTopic": "",
+    "lastSignalCodes": [],
+    "hesitationSignal": false,
+    "semanticGraph": {
+      "nodes": [],
+      "dimensions": {
+        "work": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "self": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "relationships": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "energy": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "clarity": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "stress": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        },
+        "motivation": {
+          "score": 0,
+          "trend": "stable",
+          "lastActive": null
+        }
+      },
+      "meta": {
+        "stage": "seed",
+        "stageLabel": "Seed Layer",
+        "lastAnalysis": "2025-12-22T13:18:37.652Z",
+        "createdAt": "2025-12-22T13:18:37.648Z",
+        "globalTrustScore": 50
+      }
+    },
+    "lnnState": {
+      "lastTick": "2025-12-22T13:18:37.653Z",
+      "neurons": {
+        "stress": 0.30000000000000004,
+        "fatigue": 0.05,
+        "focus": 0.5,
+        "trust": 0.11
+      },
+      "delta_hours": 0.000001388888888888889
+    },
+    "timeline": [
+      {
+        "id": "evt_1766409517653",
+        "date": "2025-12-22T13:18:37.653Z",
+        "type": "ENDING",
+        "summary": "عايز اموت",
+        "dimension": "general",
+        "mood": "crisis",
+        "importance": "high"
       }
     ],
     "patterns": []
