@@ -49,10 +49,10 @@
           "type": "SMU",
           "label": "emotional_discomfort",
           "dimension": "general",
-          "weight": 45,
-          "recurrence": 8,
+          "weight": 50,
+          "recurrence": 9,
           "created": "2025-12-19T14:31:12.976Z",
-          "lastUpdated": "2025-12-22T12:36:00.465Z"
+          "lastUpdated": "2025-12-22T12:54:32.432Z"
         }
       ],
       "dimensions": {
@@ -95,20 +95,20 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-22T12:36:00.465Z",
+        "lastAnalysis": "2025-12-22T12:54:32.432Z",
         "createdAt": "2025-12-19T14:31:09.564Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-22T12:36:00.469Z",
+      "lastTick": "2025-12-22T12:54:32.437Z",
       "neurons": {
         "stress": 1,
-        "fatigue": 0.09231386111111112,
-        "focus": 0.2076861388888889,
-        "trust": 0.12301531972222222
+        "fatigue": 0.11142586111111112,
+        "focus": 0.0885741388888889,
+        "trust": 0.13270643972222224
       },
-      "delta_hours": 0.0768613888888889
+      "delta_hours": 0.30888
     },
     "createdAt": "2025-12-19T14:31:09.564Z",
     "timeline": [],
@@ -119,7 +119,7 @@
         "trigger": "Friday afternoon",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-22T12:36:00.471Z"
+        "lastDetected": "2025-12-22T12:54:32.440Z"
       },
       {
         "id": "pat_Sunday_morning_stressed",
@@ -127,7 +127,15 @@
         "trigger": "Sunday morning",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-22T12:36:00.471Z"
+        "lastDetected": "2025-12-22T12:54:32.440Z"
+      },
+      {
+        "id": "pat_Monday_afternoon_stressed",
+        "type": "cyclical_mood",
+        "trigger": "Monday afternoon",
+        "effect": "stressed",
+        "confidence": 1,
+        "lastDetected": "2025-12-22T12:54:32.440Z"
       }
     ],
     "lastMessagePreview": "حاسس مخنوق",
@@ -136,8 +144,8 @@
     "lastLanguage": "ar",
     "lastSafetyFlag": "high_stress",
     "lastMood": "stressed",
-    "lastUpdatedAt": "2025-12-22T12:36:00.470Z",
-    "interactionCount": 7,
+    "lastUpdatedAt": "2025-12-22T12:54:32.438Z",
+    "interactionCount": 8,
     "lastTopic": "حاسس مخنوق",
     "lastSignalCodes": [],
     "hesitationSignal": false,
@@ -186,6 +194,12 @@
       },
       {
         "at": "2025-12-22T12:36:00.470Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      },
+      {
+        "at": "2025-12-22T12:54:32.438Z",
         "context": "emotional_discomfort",
         "safetyFlag": "high_stress",
         "mood": "stressed"

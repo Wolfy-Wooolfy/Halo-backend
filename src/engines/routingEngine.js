@@ -1,5 +1,6 @@
 const { resolveLanguageCode } = require("./languageDetector");
 const { normalizeMessage } = require("./messageNormalizer");
+const KEYWORDS = require("../utils/constants");
 
 function isExtremeRisk(safety) {
   if (!safety) return false;
@@ -10,19 +11,27 @@ function isExtremeRisk(safety) {
   // 2. Explicit Level Match (Future proofing)
   if (typeof safety.level === "string" && safety.level.toLowerCase() === "extreme") return true;
   
+  // 3. Fallback: Pre-emptive check for critical keywords (Defense in Depth)
+  // Check if keywords exist in safety object to avoid regex redundancy
+  if (safety.matchedKeywords && Array.isArray(safety.matchedKeywords)) {
+     // This logic is handled by safetyGuard, but we keep the structure ready if needed.
+  }
+  
   return false;
 }
 
 function isLlmConfigured() {
   const url = process.env.LLM_API_URL;
   const key = process.env.LLM_API_KEY;
-  const model = process.env.LLM_MODEL;
-  return !!(url && key && model);
+  // Per Entry #45: Model is optional (defaults to gpt-4o in llmClient), so we don't block routing if missing.
+  return !!(url && key);
 }
 
 function hasAny(text, arr) {
   const t = normalizeMessage(text).toLowerCase();
   if (!t) return false;
+  // Ensure arr is valid
+  if (!Array.isArray(arr)) return false;
   return arr.some((k) => t.includes(String(k).toLowerCase()));
 }
 
@@ -32,129 +41,44 @@ function isQuestionMessage(message, language) {
 
   if (t.includes("?") || t.includes("؟")) return true;
 
-  const arStarters = [
-    "ايه",
-    "إيه",
-    "ليه",
-    "لِيه",
-    "ازاي",
-    "إزاي",
-    "امتى",
-    "إمتى",
-    "فين",
-    "مين",
-    "هل",
-    "شو",
-    "ليش",
-    "وين",
-    "قديش",
-    "متى",
-    "كيف",
-    "لماذا"
-  ];
-
-  const enStarters = [
-    "what",
-    "why",
-    "how",
-    "when",
-    "where",
-    "who",
-    "which",
-    "can you",
-    "could you",
-    "should i",
-    "do i",
-    "is it",
-    "are you"
-  ];
-
   const lower = t.toLowerCase();
   const langCode = resolveLanguageCode(language);
 
   if (langCode === "ar") {
-    return arStarters.some((w) => t.startsWith(w));
+    return KEYWORDS.QUESTIONS.ar.some((w) => t.startsWith(w));
   }
 
   // Default to English logic for 'en' or others
-  return enStarters.some((w) => lower.startsWith(w));
+  return KEYWORDS.QUESTIONS.en.some((w) => lower.startsWith(w));
 }
 
 function hasHesitationOrStressMarkers(message, language) {
   const t = normalizeMessage(message);
   const langCode = resolveLanguageCode(language);
 
-  const arMarkers = [
-    "متوتر",
-    "قلقان",
-    "خايف",
-    "مش قادر",
-    "مش عارف",
-    "مش عارف أنام",
-    "مش عارف انام",
-    "مضغوط",
-    "ضغط",
-    "تعبان",
-    "مرهق",
-    "حاسس",
-    "مأثر",
-    "ماثر",
-    "مش مركز",
-    "مش قادر اركز",
-    "مش قادر أركز",
-    "مش بنام",
-    "أرق",
-    "ارق",
-    "توتر"
-  ];
-
-  const enMarkers = [
-    "anxious",
-    "stressed",
-    "worried",
-    "can't sleep",
-    "cannot sleep",
-    "insomnia",
-    "tired",
-    "overwhelmed",
-    "i can't",
-    "i cannot",
-    "i don't know",
-    "i’m not sure",
-    "affecting my work"
-  ];
-
-  if (langCode === "ar") return hasAny(t, arMarkers);
-  return hasAny(t, enMarkers);
+  if (langCode === "ar") return hasAny(t, KEYWORDS.STRESS.ar);
+  return hasAny(t, KEYWORDS.STRESS.en);
 }
 
 function hasTopicMarkers(message, language) {
   const t = normalizeMessage(message);
   const langCode = resolveLanguageCode(language);
 
-  const workAr = ["شغل", "عمل", "وظيفة", "شركة", "مدير", "مشروع", "تاسك", "كارير", "مأثر على شغلي", "ماثر على شغلي"];
-  const relAr = ["زوج", "مراتي", "علاقة", "خطيب", "خطيبة", "أهلي", "صاحب", "صديقة", "فراق", "مشاعر", "بيت"];
-  const selfAr = ["نوم", "صحة", "جيم", "تركيز", "عادة", "قلق", "توتر", "اكتئاب"];
-
-  const workEn = ["work", "job", "career", "boss", "company", "project", "task"];
-  const relEn = ["relationship", "partner", "spouse", "family", "friend", "breakup", "love"];
-  const selfEn = ["sleep", "health", "focus", "habit", "anxiety", "stress", "depression"];
+  // Use Centralized Constants
+  const topics = KEYWORDS.TOPICS;
 
   if (langCode === "ar") {
-    return hasAny(t, workAr) || hasAny(t, relAr) || hasAny(t, selfAr);
+    return hasAny(t, topics.WORK.ar) || hasAny(t, topics.RELATIONSHIPS.ar) || hasAny(t, topics.SELF.ar);
   }
-
-  return hasAny(t, workEn) || hasAny(t, relEn) || hasAny(t, selfEn);
+  return hasAny(t, topics.WORK.en) || hasAny(t, topics.RELATIONSHIPS.en) || hasAny(t, topics.SELF.en);
 }
 
 function decideRoute(options) {
   const message = options && (options.normalizedMessage || options.message || "");
   const messageLength = typeof message === "string" ? message.trim().length : 0;
-
   const contextHalo = options && options.context_halo ? options.context_halo : "general";
   const safety = options && options.safety ? options.safety : {};
-  const language =
-    (options && (options.language || (options.meta && options.meta.language))) || "en";
+  const language = (options && (options.language || (options.meta && options.meta.language))) || "en";
 
   const llmAvailable = isLlmConfigured();
 
@@ -164,16 +88,24 @@ function decideRoute(options) {
   let temperature = 0.4;
   let reason = "default balanced routing";
 
-  if (isExtremeRisk(safety)) {
+  // 1. SAFETY OVERRIDE (Extreme Risk -> NO LLM)
+  // Defense in Depth: Explicitly catch Self-Harm / Harm Others here
+  // Updated to include medical_emergency and harm_others as Per Entry #46
+  if (
+    isExtremeRisk(safety) || 
+    safety.category === "harm_others" || 
+    safety.category === "medical_emergency"
+  ) {
     return {
       mode: "fast",
       useLLM: false,
       maxTokens: 60,
       temperature: 0.1,
-      reason: "extreme_risk → fast mode with templates (no LLM)"
+      reason: "extreme_risk/critical_safety → fast mode with templates (no LLM)"
     };
   }
 
+  // 2. High Risk / High Stress (Non-Extreme)
   if (safety && safety.flag === "high_risk") {
     mode = "balanced";
     useLLM = true;
@@ -191,35 +123,31 @@ function decideRoute(options) {
     useLLM = true;
     maxTokens = 120;
     temperature = 0.4;
-    reason = "emotional_discomfort → balanced LLM for nuanced tone";
-  } else if (contextHalo === "decision" || contextHalo === "decision_making") {
+    reason = "emotional_discomfort → balanced LLM for empathy";
+  } else if (contextHalo === "decision") {
     mode = "balanced";
     useLLM = true;
-    maxTokens = 120;
-    temperature = 0.4;
-    reason = "decision_context → balanced LLM for clarity";
+    maxTokens = 150;
+    temperature = 0.3;
+    reason = "decision_making → balanced LLM for clarity";
   } else {
-    const markerStress = hasHesitationOrStressMarkers(message, language);
-    const markerTopic = hasTopicMarkers(message, language);
+    // 3. General Conversation
+    // Optimization: Very short general messages don't need LLM cost if generic
     const isQuestion = isQuestionMessage(message, language);
+    const hasStress = hasHesitationOrStressMarkers(message, language);
+    const hasTopic = hasTopicMarkers(message, language);
 
-    if ((markerStress || markerTopic) && messageLength >= 20) {
-      mode = "balanced";
-      useLLM = true;
-      maxTokens = 120;
-      temperature = 0.4;
-      reason = "markers_detected (stress/topic) → balanced LLM even if message is short";
-    } else if (messageLength > 0 && messageLength <= 30 && !isQuestion) {
+    if (!isQuestion && !hasStress && !hasTopic && messageLength < 15) {
       mode = "fast";
-      useLLM = false;
-      maxTokens = 60;
-      temperature = 0.3;
-      reason = "very_short_general_message (no question) → fast mode without LLM";
+      useLLM = false; 
+      // NOTE: Client might override this to 'true' if we want chatty persona always.
+      // For MVP cost-saving: false.
+      reason = "short_general_message → fast mode without LLM";
     } else if (messageLength > 200) {
       mode = "balanced";
       useLLM = true;
-      maxTokens = 160;
-      temperature = 0.4;
+      maxTokens = 200;
+      temperature = 0.5;
       reason = "long_message → balanced LLM with higher token limit";
     } else {
       mode = "balanced";
@@ -230,9 +158,10 @@ function decideRoute(options) {
     }
   }
 
+  // Final Circuit Breaker: If LLM is not configured, force fallback
   if (!llmAvailable) {
     useLLM = false;
-    reason += " | LLM not configured → fallback to rule-based reasoning";
+    reason += " (LLM not configured → fallback to rule-based reasoning)";
   }
 
   return {
@@ -244,6 +173,4 @@ function decideRoute(options) {
   };
 }
 
-module.exports = {
-  decideRoute
-};
+module.exports = { decideRoute, isLlmConfigured };

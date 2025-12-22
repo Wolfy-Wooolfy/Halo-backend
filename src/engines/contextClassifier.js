@@ -8,6 +8,7 @@ function normalizeForClassification(text) {
 }
 
 function containsAny(text, keywords) {
+  if (!Array.isArray(keywords)) return false;
   for (let i = 0; i < keywords.length; i++) {
     if (text.includes(keywords[i])) {
       return true;
@@ -28,7 +29,7 @@ function classifyMessage(rawText) {
     };
   }
 
-  // Combine AR and EN stress markers for broad classification
+  // Combine AR and EN stress markers for broad classification using Central Constants
   // This ensures consistency with RoutingEngine which uses the same source
   const emotionalWords = [...KEYWORDS.STRESS.ar, ...KEYWORDS.STRESS.en];
   
