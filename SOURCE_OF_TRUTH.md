@@ -392,7 +392,7 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 ---
 
 ### HALO — Memory Interface Abstraction Spec (Phase 3-B, Baseline v0.3).md
-RAW: 
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%94%20Memory%20Interface%20Abstraction%20Spec%20(Phase%203-B%2C%20Baseline%20v0.3).md
 
 ---
 
