@@ -192,6 +192,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engin
 
 ---
 
+### identityEngine.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/engines/identityEngine.js
+
+---
+
 ### 4.6 Tests
 
 #### src/tests/chat.contract.test.js
