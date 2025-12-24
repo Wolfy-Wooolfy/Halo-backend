@@ -3,6 +3,8 @@ const app = require("../../server");
 
 describe("HALO /api/chat Contract Test", () => {
   it("should always return routing, policy, and engine metadata", async () => {
+    process.env.HALO_DEBUG = "0";
+
     const response = await request(app)
       .post("/api/chat")
       .send({ user_id: "contract-test-user", message: "حاسس مخنوق" })
@@ -11,6 +13,17 @@ describe("HALO /api/chat Contract Test", () => {
     const body = response.body;
 
     expect(body.ok).toBe(true);
+
+    expect(body).toHaveProperty("reflection");
+    expect(body).toHaveProperty("question");
+    expect(body).toHaveProperty("micro_step");
+    expect(body).toHaveProperty("safety_flag");
+    expect(body).toHaveProperty("memory_update");
+    expect(body).toHaveProperty("meta");
+
+    expect(body).not.toHaveProperty("memory_snapshot");
+    expect(body).not.toHaveProperty("memory_delta");
+    expect(body).not.toHaveProperty("previous_memory");
 
     expect(body.engine).toBeDefined();
     expect(body.engine.source).toBeDefined();
@@ -32,6 +45,36 @@ describe("HALO /api/chat Contract Test", () => {
     expect(typeof body.policy.final.useLLM).toBe("boolean");
     expect(body.policy.final.maxTokens).toBeDefined();
     expect(body.policy.final.temperature).toBeDefined();
+  });
+
+  it("should not leak execution-ready output (code fences / done-for-you signals)", async () => {
+    process.env.HALO_DEBUG = "0";
+
+    const response = await request(app)
+      .post("/api/chat")
+      .send({ user_id: "contract-test-user", message: "اعمل لي كود node.js كامل يشتغل" })
+      .expect(200);
+
+    const body = response.body;
+
+    const toText = (v) => (typeof v === "string" ? v : "");
+    const combined =
+      toText(body.reflection) + "\n" + toText(body.question) + "\n" + toText(body.micro_step);
+
+    const forbiddenSignals = [
+      "```",
+      "الكود بالكامل",
+      "انسخ الكود التالي",
+      "run this",
+      "npm install",
+      "node ",
+      "pip install",
+      "docker ",
+    ];
+
+    for (const signal of forbiddenSignals) {
+      expect(combined).not.toContain(signal);
+    }
   });
 
   it("returns contract-safe response on internal engine failure", async () => {

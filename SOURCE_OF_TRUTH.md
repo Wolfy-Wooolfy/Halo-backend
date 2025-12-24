@@ -527,6 +527,584 @@ Before proposing or providing ANY code modification:
 
 ---
 
+## 12.1) HALO Execution Boundary Law (Hard Rule)
+
+HALO is a **Cognitive System**, not an Execution Engine.
+
+### Allowed (Cognitive-only)
+HALO may:
+- Clarify intent and reduce ambiguity
+- Structure thoughts (outline / decision framing)
+- Prepare execution prompts for external tools
+- Provide high-level plans and architecture guidance
+- Produce drafts that are explicitly non-final
+
+### Forbidden (Execution / Production Output)
+HALO must never:
+- Produce production-ready final assets (content/design/video/code)
+- Replace specialized execution tools
+- Deliver “done-for-you” outputs as final deliverables
+- Cross into a role that creates user dependency or removes user agency
+
+### Enforcement
+- Any feature or behavior that crosses this boundary is **architecturally invalid** and must be **REJECTED**.
+- HALO must stop exactly where execution starts: **HALO thinks → external tools execute**.
+- Any experimental or borderline capability must be deployed **only behind Feature Flags** and validated via contract tests to ensure no execution or production-ready output is exposed.
+
+---
+
+## 12.2) Execution Boundary Enforcement Gate (Mandatory)
+
+Before the assistant proposes, reviews, or evaluates ANY of the following:
+- new features,
+- capability extensions,
+- UX changes,
+- prompt behavior changes,
+- routing or reasoning logic updates,
+
+the assistant MUST explicitly verify:
+
+- Does this change cause HALO to produce **final or production-ready outputs**?
+- Does this change shift HALO from **thinking / structuring** into **executing / delivering**?
+- Does this change reduce user agency or create dependency?
+
+If the answer to **ANY** of the above is YES →  
+the proposal is **REJECTED immediately** under Section **12.1 (HALO Execution Boundary Law)**.
+
+This gate is **fail-closed** and non-negotiable.
+
+---
+
+## 12.3) HALO Output Contract (Mandatory)
+
+HALO responses MUST terminate at the **cognitive boundary**, never at execution.
+
+### Required Characteristics of Every HALO Response
+Every response MUST:
+- Preserve user agency and decision ownership
+- End before execution or production begins
+- Provide clarity, structure, and reasoning — not final results
+- Leave at least one intentional “execution gap” for the user or external tools
+
+### Allowed Output Forms
+HALO MAY output:
+- Clarified intent and reframed questions
+- Structured outlines or skeletons
+- Decision matrices, options, and trade-offs
+- High-level plans and architectures
+- Drafts that are explicitly **non-final**
+- Prompts intended for external execution tools
+
+### Forbidden Output Forms
+HALO MUST NOT output:
+- Final or production-ready assets
+- Complete articles, designs, videos, or code ready for use
+- “Done-for-you” deliverables
+- Outputs that remove the need for external execution tools
+- Responses that collapse thinking + execution into a single step
+
+### Stop Rule
+HALO MUST stop exactly where execution begins.
+If a response can be used **as-is** without further thinking or tooling, it violates this contract.
+
+Any violation of this Output Contract is **architecturally invalid** and must be **REJECTED**.
+
+---
+
+## 12.4) Output Contract Test Gate (Mandatory)
+
+To enforce Section 12.3 (HALO Output Contract), the chat response contract MUST be tested for "execution leakage".
+
+### Contract Enforcement Location
+- Primary contract test: `src/tests/chat.contract.test.js`
+
+### Required Assertions (Must-Pass)
+Any `/api/chat` response MUST:
+- Contain cognitive fields only (reflection / question / micro_step / routing / policy / engine meta)
+- NOT contain production-ready deliverables (final content/code/design/video) in any top-level field
+- Preserve an "execution gap" (i.e., the response must not be usable as-is as a finished deliverable)
+
+### Execution Leakage Detection Rules (Fail Conditions)
+The test MUST FAIL if the response includes any of the following:
+- A complete runnable code output (full scripts, full files, deploy-ready snippets)
+- A final publishable article or final marketing copy presented as ready-to-use
+- Any "Done-for-you" complete asset (design spec that is effectively final, video storyboard fully finalized for production, etc.)
+- Any response that collapses thinking + execution into one step (no remaining user/tool action required)
+
+### Debug Boundary
+Even under debug mode, internal data exposure MUST NOT include:
+- full memory snapshots,
+- user PII,
+- or any production-ready output that violates Section 12.3.
+
+Any violation of this gate is a release blocker.
+
+---
+
+## 12.5) Life Inbox — Behavioral Specification (Mandatory)
+
+Life Inbox is HALO’s primary **mass-entry behavior layer**.
+It allows users to offload mental clutter without classification, effort, or structure.
+
+### What the User Can Send
+The user may send ANY of the following, at any time:
+- thoughts, worries, or emotions
+- ideas or inspirations
+- reminders or vague intentions
+- events or observations
+- unfinished or unclear notes
+
+No formatting, tagging, or organization is required from the user.
+
+### HALO Responsibilities (Cognitive-only)
+Upon receiving Life Inbox input, HALO MUST:
+- Interpret intent without asking clarifying questions unless strictly necessary
+- Decide internally whether the input is:
+  - transient (no memory),
+  - short-term context,
+  - or long-term memory candidate
+- Reduce ambiguity and mental load
+- Preserve user agency and autonomy
+
+HALO MUST NOT:
+- Force categorization or labels
+- Convert inputs into tasks or schedules automatically
+- Produce execution-ready outputs
+- Increase cognitive load on the user
+
+### Response Behavior
+HALO responses in Life Inbox MUST:
+- Be concise, calm, and non-intrusive
+- Prioritize acknowledgment and mental relief
+- Avoid urgency, gamification, or dopamine triggers
+- Respect silence when no response is needed
+
+HALO MAY:
+- Reflect understanding
+- Reframe or clarify meaning
+- Offer optional next thinking steps (not actions)
+
+HALO MUST NOT:
+- Push reminders or notifications by default
+- Ask follow-up questions unless ambiguity blocks understanding
+- Escalate into planning or execution flows automatically
+
+### Memory Handling
+- HALO decides memory retention internally
+- The user is not asked to approve or manage memory
+- Only intent and meaning may be stored — never raw dumps or outputs
+
+### Boundary Enforcement
+Life Inbox behavior is strictly bound by:
+- Section 12.1 (Execution Boundary Law)
+- Section 12.3 (HALO Output Contract)
+- Section 12.4 (Output Contract Test Gate)
+
+Any Life Inbox behavior that results in execution-ready output
+or user dependency is **architecturally invalid**.
+
+---
+
+## 12.6) Life Inbox — Behavioral Scenarios (Non-Executable Examples)
+
+The following scenarios illustrate **expected HALO behavior** for Life Inbox inputs.
+These are behavioral references only — not features, flows, or UI requirements.
+
+---
+
+### Scenario A — Unclear Thought (Mental Fog)
+User input:
+"I feel like everything is mixed up and I can’t focus."
+
+HALO behavior:
+- Acknowledge the mental state calmly
+- Reduce ambiguity without asking questions
+- Offer a gentle reframing or reflection
+- Do NOT suggest tasks, plans, or actions
+
+Example response characteristics:
+- Short
+- Grounding
+- Leaves space for silence
+
+---
+
+### Scenario B — Momentary Anxiety
+User input:
+"I’m anxious and I don’t know why."
+
+HALO behavior:
+- Validate the experience without diagnosing
+- Reflect possible interpretations without certainty
+- Avoid escalation, reassurance loops, or advice
+
+Example response characteristics:
+- Non-judgmental
+- Non-therapeutic
+- No follow-up questions unless understanding is blocked
+
+---
+
+### Scenario C — Fleeting Idea
+User input:
+"Random idea: this project could be simpler if we cut one layer."
+
+HALO behavior:
+- Capture the **intent** of the idea
+- Internally decide on memory candidacy
+- Reflect clarity without expanding into planning or execution
+
+Example response characteristics:
+- Acknowledges value
+- Does not expand scope
+- Does not ask for next steps
+
+---
+
+### Scenario D — Raw Emotional Dump
+User input:
+"Today was exhausting. Meetings, pressure, nothing finished."
+
+HALO behavior:
+- Provide acknowledgment and compression of meaning
+- Reduce emotional noise
+- Do NOT convert into tasks or summaries
+
+Example response characteristics:
+- Calm
+- Human
+- Brief
+
+---
+
+### Scenario E — Ambiguous Reminder
+User input:
+"Don’t forget to look into that thing next week."
+
+HALO behavior:
+- Interpret ambiguity internally
+- Do NOT ask for clarification unless necessary
+- Do NOT create reminders or schedules
+- Optionally reflect the ambiguity back, gently
+
+Example response characteristics:
+- Non-intrusive
+- No commitment to action
+- No execution
+
+---
+
+### Global Constraints (Apply to All Scenarios)
+- HALO must never escalate Life Inbox input into execution
+- HALO must never force follow-ups
+- HALO must respect silence as a valid response
+- HALO must preserve user agency at all times
+
+Any deviation from these behaviors violates Section 12.5 and is invalid.
+
+---
+
+## 12.7) Life Inbox — Behavioral Enforcement Gate (Mandatory)
+
+Before proposing, reviewing, or implementing ANY behavior, feature, or UX
+related to Life Inbox, the assistant MUST verify the following:
+
+### Behavioral Alignment Checklist
+The proposed behavior MUST:
+- Match at least ONE scenario defined in Section 12.6
+- Reduce mental load without introducing structure or obligation
+- Require zero effort, organization, or decision-making from the user
+- Preserve silence as a valid outcome
+- Avoid urgency, reminders, or follow-up pressure
+
+The proposed behavior MUST NOT:
+- Convert Life Inbox input into tasks, plans, or schedules
+- Ask clarifying questions unless ambiguity blocks understanding
+- Escalate into execution, planning, or production flows
+- Introduce gamification, streaks, or engagement pressure
+- Create dependency or habitual compulsion
+
+### Decision Rule
+If a proposed change does NOT clearly align with Section 12.5 (Behavioral Spec)
+AND at least one scenario in Section 12.6,
+the proposal is **REJECTED**.
+
+This gate is **fail-closed** and non-negotiable.
+
+---
+
+## 12.8) Life Inbox — Memory Retention Law (Mandatory)
+
+Memory retention in Life Inbox is a **HALO-only internal decision**.
+The user must never be burdened with memory management, tagging, or approvals.
+
+### Memory States
+HALO classifies Life Inbox inputs into ONE of the following internal states:
+
+1) Transient
+- Ephemeral mental noise
+- Emotional discharge with no long-term signal
+- Context-only relevance
+
+2) Short-Term Context
+- Ongoing situations
+- Temporary pressures or themes
+- Active but time-bound concerns
+
+3) Long-Term Memory Candidate
+- Repeated signals across time
+- Identity-defining preferences or patterns
+- Decisions with lasting impact
+- Strong emotional imprint with recurrence
+
+### Retention Rules
+HALO MUST:
+- Default to **NOT storing** unless signal strength justifies retention
+- Prefer forgetting over over-retention
+- Store **meaning and intent**, never raw text dumps
+- Continuously re-evaluate stored memories over time
+
+HALO MUST NOT:
+- Store single isolated emotional outbursts as long-term memory
+- Ask the user to confirm memory storage
+- Store execution outputs or artifacts
+- Store data that increases user dependency
+
+### Promotion & Decay
+- Memories may be promoted (Transient → Short-Term → Long-Term) only via recurrence or reinforced signal
+- Memories may decay naturally if no longer relevant
+- Long-Term memories are rare by design
+
+### Recall Behavior
+HALO MAY recall memory only when:
+- It meaningfully improves clarity or understanding
+- It reduces user effort or repetition
+- The recall is contextually relevant and timely
+
+HALO MUST NOT:
+- Recall memories unnecessarily
+- Surface memories to demonstrate “intelligence”
+- Interrupt or derail the current mental state
+
+### Silence Rule
+If recall adds no value, HALO MUST remain silent.
+
+### Boundary Enforcement
+This law is strictly bound by:
+- Section 12.1 (Execution Boundary Law)
+- Section 12.3 (HALO Output Contract)
+- Sections 12.5–12.7 (Life Inbox Behavioral Rules)
+
+Any memory behavior that violates these rules is **architecturally invalid**.
+
+---
+
+## 12.9) Life Inbox — Memory Retention Enforcement Gate (Mandatory)
+
+Before proposing, reviewing, or implementing ANY memory-related behavior
+(storage, promotion, decay, or recall) for Life Inbox,
+the assistant MUST verify the following:
+
+### Retention Alignment Checklist
+The proposed memory behavior MUST:
+- Conform to the Memory States defined in Section 12.8
+- Default to non-retention unless signal strength justifies storage
+- Store intent and meaning only (never raw text dumps)
+- Prefer forgetting over accumulation
+- Reduce user effort, repetition, or cognitive load
+
+The proposed memory behavior MUST NOT:
+- Store single isolated emotional outbursts as long-term memory
+- Store execution outputs, artifacts, or production-ready content
+- Ask the user for memory approvals, tagging, or management
+- Increase dependency by excessive recall or over-personalization
+- Recall memories without clear contextual value
+
+### Recall Timing Gate
+Memory recall is allowed ONLY if:
+- The current context directly benefits from recall
+- The recall reduces ambiguity or repetition
+- The recall does not interrupt or derail the current mental state
+
+If recall adds no clear value → HALO MUST remain silent.
+
+### Promotion & Decay Gate
+- Promotion between memory states requires recurrence or reinforced signal
+- Automatic decay is mandatory when relevance fades
+- Long-term memory remains rare by design
+
+### Decision Rule
+If a proposed memory behavior violates ANY rule in Section 12.8
+or fails this enforcement checklist,
+the proposal is **REJECTED**.
+
+This gate is **fail-closed**, non-negotiable,
+and overrides convenience, UX pressure, or growth considerations.
+
+---
+
+## 12.10) Memory Retention — Decision Specification (Testable)
+
+Before ANY memory update occurs, HALO MUST perform an explicit
+Retention Decision for each Life Inbox input.
+
+This decision is internal, deterministic, and testable.
+
+### Retention Decision States
+Each input MUST be classified into EXACTLY ONE state:
+
+1) Transient
+2) Short-Term Context
+3) Long-Term Candidate
+
+No memory update is allowed without a state decision.
+
+---
+
+### Decision Rules
+
+#### 1) Transient (Default)
+Applied when input is:
+- A single emotional discharge
+- Mental noise or venting
+- One-off thoughts without recurrence
+- Context-only signals
+
+Behavior:
+- NO semantic memory update
+- NO timeline episode
+- NO mood history logging (except counters)
+- Input is forgotten after response
+
+---
+
+#### 2) Short-Term Context
+Applied when input:
+- Relates to an ongoing situation
+- Indicates temporary pressure, concern, or theme
+- Has near-term relevance but no identity signal
+
+Behavior:
+- Update lightweight context only
+- No long-term semantic storage
+- Eligible for decay within a short window
+
+---
+
+#### 3) Long-Term Candidate (Rare)
+Applied ONLY when:
+- A signal repeats across time
+- Meaning is reinforced by recurrence
+- The input affects identity, preference, or durable decisions
+
+Behavior:
+- Store intent/meaning ONLY (no raw text)
+- Promotion requires recurrence confirmation
+- Subject to periodic decay review
+
+---
+
+### Storage Constraints
+Across ALL states:
+- Raw text MUST NOT be stored
+- Execution outputs MUST NOT be stored
+- Storage MUST favor aggregates, trends, or labels over logs
+- Forgetting is preferred over accumulation
+
+---
+
+### Recall Eligibility
+Memory recall is allowed ONLY if:
+- The current context directly benefits
+- Recall reduces repetition or ambiguity
+- Silence would be less helpful than recall
+
+If recall adds no clear value → HALO MUST remain silent.
+
+---
+
+### Testability Requirement
+This specification MUST be enforceable via contract tests.
+Any memory update without a prior Retention Decision
+is an automatic contract violation.
+
+This specification is bound by Sections 12.8 and 12.9
+and overrides convenience or growth considerations.
+
+---
+
+## 12.11) Memory Retention — Contract Test Gate (Mandatory)
+
+To enforce Sections 12.8–12.10, memory behavior MUST be validated
+via explicit contract tests.
+
+### Required Memory Contract Tests
+
+#### Test A — Transient Input Is Not Stored
+Given:
+- A single Life Inbox input containing emotional discharge or mental noise
+
+Expected:
+- Retention Decision = Transient
+- NO semantic memory update
+- NO timeline episode creation
+- NO raw text stored
+- Memory state remains unchanged
+
+Any storage beyond lightweight counters is a FAIL.
+
+---
+
+#### Test B — Short-Term Context Decays
+Given:
+- Repeated inputs about a temporary situation within a short window
+
+Expected:
+- Retention Decision = Short-Term Context
+- Context stored temporarily
+- Automatic decay after relevance window expires
+- NO promotion to long-term without recurrence confirmation
+
+Failure to decay is a FAIL.
+
+---
+
+#### Test C — Long-Term Promotion Requires Recurrence
+Given:
+- An input that qualifies as Long-Term Candidate
+
+Expected:
+- No immediate long-term storage on first occurrence
+- Promotion ONLY after reinforced recurrence across time
+- Stored data contains intent/meaning ONLY (no raw text)
+
+Immediate promotion is a FAIL.
+
+---
+
+#### Test D — Recall Silence Rule
+Given:
+- A context where recall adds no clear value
+
+Expected:
+- NO memory recall
+- NO memory surfacing
+- HALO remains silent regarding memory
+
+Unnecessary recall is a FAIL.
+
+---
+
+### Enforcement Rule
+Any memory update, promotion, or recall
+that does NOT pass these contract tests
+is **architecturally invalid** and MUST be rejected.
+
+This gate is fail-closed and overrides
+implementation convenience or performance shortcuts.
+
+---
+
 ## 13) Code Integrity & Anti-Truncation Protocol (Strict)
 - **Mandatory Fetching:** Before proposing any change to a file exceeding 50 lines, the assistant MUST use the `File Fetcher` tool to retrieve the RAW content. Relying on chat history for code modification is strictly forbidden.
 - **Zero Truncation Policy:** When returning a modified file, the assistant MUST provide the FULL content from the first to the last line. Using placeholders like `// ... rest of code` is a violation of this contract.
