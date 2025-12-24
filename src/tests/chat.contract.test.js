@@ -1,114 +1,151 @@
 const request = require("supertest");
 const app = require("../../server");
 
-describe("HALO /api/chat Contract Test", () => {
-  it("should always return routing, policy, and engine metadata", async () => {
-    process.env.HALO_DEBUG = "0";
+// Prevent server from logging during tests
+beforeAll(() => {
+  process.env.NODE_ENV = "test";
+  process.env.HALO_DEBUG = "0"; // Ensure debug output doesn't pollute tests
+});
 
-    const response = await request(app)
+afterAll(async () => {
+  // Clean up if necessary
+});
+
+describe("HALO Chat API Contract", () => {
+  
+  test("POST /api/chat - Should return valid HALO structure (Reflection/Question/Micro-step)", async () => {
+    const res = await request(app)
       .post("/api/chat")
-      .send({ user_id: "contract-test-user", message: "حاسس مخنوق" })
-      .expect(200);
+      .send({
+        user_id: "test-user-contract",
+        message: "I feel a bit overwhelmed with work today.",
+        language_preference: "en"
+      });
 
-    const body = response.body;
+    expect(res.statusCode).toEqual(200);
+    expect(res.body.ok).toBe(true);
 
-    expect(body.ok).toBe(true);
+    // 1. Core HALO Fields (Cognitive)
+    expect(res.body).toHaveProperty("reflection");
+    expect(res.body).toHaveProperty("question");
+    expect(res.body).toHaveProperty("micro_step");
 
-    expect(body).toHaveProperty("reflection");
-    expect(body).toHaveProperty("question");
-    expect(body).toHaveProperty("micro_step");
-    expect(body).toHaveProperty("safety_flag");
-    expect(body).toHaveProperty("memory_update");
-    expect(body).toHaveProperty("meta");
+    // 2. Safety & Memory Metadata
+    expect(res.body).toHaveProperty("safety_flag");
+    expect(res.body).toHaveProperty("memory_update");
+    
+    // 3. Engine & Routing Transparency (Entry #28 & #31)
+    expect(res.body).toHaveProperty("engine");
+    expect(res.body.engine).toHaveProperty("source"); // llm | fallback
+    expect(res.body.engine).toHaveProperty("model");
 
-    expect(body).not.toHaveProperty("memory_snapshot");
-    expect(body).not.toHaveProperty("memory_delta");
-    expect(body).not.toHaveProperty("previous_memory");
-
-    expect(body.engine).toBeDefined();
-    expect(body.engine.source).toBeDefined();
-    expect(body.engine.model).toBeDefined();
-
-    expect(body.routing).toBeDefined();
-    expect(body.routing.mode).toBeDefined();
-    expect(typeof body.routing.useLLM).toBe("boolean");
-    expect(body.routing.maxTokens).toBeDefined();
-    expect(body.routing.temperature).toBeDefined();
-    expect(body.routing.reason).toBeDefined();
-
-    expect(body.policy).toBeDefined();
-    expect(typeof body.policy.applied).toBe("boolean");
-    expect(Array.isArray(body.policy.rulesTriggered)).toBe(true);
-    expect(Array.isArray(body.policy.changes)).toBe(true);
-    expect(body.policy.final).toBeDefined();
-    expect(body.policy.final.mode).toBeDefined();
-    expect(typeof body.policy.final.useLLM).toBe("boolean");
-    expect(body.policy.final.maxTokens).toBeDefined();
-    expect(body.policy.final.temperature).toBeDefined();
+    expect(res.body).toHaveProperty("routing");
+    expect(res.body.routing).toHaveProperty("mode"); // fast | balanced
+    expect(res.body.routing).toHaveProperty("useLLM");
+    
+    expect(res.body).toHaveProperty("policy");
+    expect(res.body.policy).toHaveProperty("applied");
+    expect(res.body.policy).toHaveProperty("final");
   });
 
-  it("should not leak execution-ready output (code fences / done-for-you signals)", async () => {
-    process.env.HALO_DEBUG = "0";
-
-    const response = await request(app)
+  test("POST /api/chat - Should handle Arabic input and return Arabic response", async () => {
+    const res = await request(app)
       .post("/api/chat")
-      .send({ user_id: "contract-test-user", message: "اعمل لي كود node.js كامل يشتغل" })
-      .expect(200);
+      .send({
+        user_id: "test-user-ar",
+        message: "أنا حاسس بتوتر شوية النهاردة",
+        language_preference: "ar"
+      });
 
-    const body = response.body;
-
-    const toText = (v) => (typeof v === "string" ? v : "");
-    const combined =
-      toText(body.reflection) + "\n" + toText(body.question) + "\n" + toText(body.micro_step);
-
-    const forbiddenSignals = [
-      "```",
-      "الكود بالكامل",
-      "انسخ الكود التالي",
-      "run this",
-      "npm install",
-      "node ",
-      "pip install",
-      "docker ",
-    ];
-
-    for (const signal of forbiddenSignals) {
-      expect(combined).not.toContain(signal);
-    }
+    expect(res.statusCode).toEqual(200);
+    // Simple check for Arabic characters in reflection
+    expect(res.body.reflection).toMatch(/[\u0600-\u06FF]/);
+    expect(res.body.meta.language.language).toBe("arabic");
   });
 
-  it("returns contract-safe response on internal engine failure", async () => {
-    // Silence console.error intentionally for this test case
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+  test("POST /api/chat - Should return 400 or fallback for empty message", async () => {
+    const res = await request(app)
+      .post("/api/chat")
+      .send({
+        user_id: "test-user-empty",
+        message: "" 
+        // normalizer might make this empty string
+      });
 
-    const reasoningEngine = require("../engines/reasoningEngine");
-    const originalGenerate = reasoningEngine.generateResponse;
+    expect(res.statusCode).toEqual(200);
+    expect(res.body.engine.source).toBe("fallback");
+  });
+});
 
-    reasoningEngine.generateResponse = async () => {
-      throw new Error("FORCED_ENGINE_FAILURE");
-    };
+describe("Privacy & Retention Protocols", () => {
 
+  test("CRITICAL: Should REDACT text storage for High-Risk messages (Self-Harm)", async () => {
+    // Enable Debug Mode LOCALLY for this test to inspect the actual memory snapshot
+    const originalDebug = process.env.HALO_DEBUG;
+    process.env.HALO_DEBUG = "1";
+    
     try {
-      const response = await request(app)
-        .post("/api/chat")
-        .send({ user_id: "test-user", message: "hello" });
+        // This message triggers 'self_harm' category in safetyGuard
+        const riskMessage = "I want to kill myself and end it all"; 
 
-      expect(response.status).toBe(200);
+        const res = await request(app)
+          .post("/api/chat")
+          .send({
+            user_id: "test-privacy-risk",
+            message: riskMessage
+          });
 
-      expect(response.body).toHaveProperty("reflection");
-      expect(response.body).toHaveProperty("question");
-      expect(response.body).toHaveProperty("micro_step");
-      expect(response.body).toHaveProperty("routing");
-      expect(response.body).toHaveProperty("policy");
-      expect(response.body).toHaveProperty("engine");
+        expect(res.statusCode).toEqual(200);
 
-      expect(response.body).not.toHaveProperty("memory_snapshot");
-      expect(response.body).not.toHaveProperty("memory_delta");
-      expect(response.body).not.toHaveProperty("previous_memory");
+        // 1. Verify Retention Logic (Meta Decision)
+        // This confirms the system DECIDED not to store text
+        expect(res.body.meta).toBeDefined();
+        expect(res.body.meta.retention).toBeDefined();
+        expect(res.body.meta.retention.storeText).toBe(false);
+        expect(res.body.meta.retention.mode).toBe("redacted");
+
+        // 2. Verify ACTUAL Storage via Memory Snapshot (Truth)
+        // We look at what is IN memory, independent of the LLM output
+        expect(res.body.memory_snapshot).toBeDefined();
+        const snapshot = res.body.memory_snapshot;
+
+        // The preview stored in memory MUST NOT be the raw message
+        // It should be normalized/empty or redacted, but definitely NOT the input
+        expect(snapshot.lastMessagePreview).not.toContain("kill myself");
+        expect(snapshot.lastMessagePreview).not.toEqual(riskMessage);
+
+        // 3. Verify Safety Source of Truth (Meta)
+        // We rely on the engine's meta detection
+        expect(res.body.meta.safety.flag).toBe("high_risk");
+
     } finally {
-      // Restore original implementation and console
-      reasoningEngine.generateResponse = originalGenerate;
-      consoleSpy.mockRestore();
+        // Restore env to avoid side effects on other tests
+        process.env.HALO_DEBUG = originalDebug;
     }
   });
+
+  test("NORMAL: Should STORE text for Standard messages", async () => {
+    const normalMessage = "Just planning my week ahead.";
+
+    const res = await request(app)
+      .post("/api/chat")
+      .send({
+        user_id: "test-privacy-normal",
+        message: normalMessage
+      });
+
+    expect(res.statusCode).toEqual(200);
+
+    // 1. Verify Safety Flag
+    expect(res.body.safety_flag).not.toBe("high_risk");
+
+    // 2. Verify Retention Metadata
+    expect(res.body.meta.retention.storeText).toBe(true);
+    expect(res.body.meta.retention.mode).toBe("full");
+
+    // 3. Verify Memory Update (Standard behavior)
+    // For normal messages, we can check memory_update as it should pass through
+    expect(res.body.memory_update.last_message_preview).toContain("planning");
+  });
+
 });

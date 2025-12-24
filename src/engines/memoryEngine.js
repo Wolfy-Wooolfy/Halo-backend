@@ -233,7 +233,13 @@ function updateUserMemory(payload) {
   const finalSafety = muLastSafetyFlag ? muLastSafetyFlag : safetyFlag;
 
   const mood = deriveMood(finalContext, finalSafety);
-  const preview = muPreview ? muPreview : buildPreview(normalizedMessage);
+  
+  // FIX: Enforce consistency between Stored Message and Preview.
+  // If normalizedMessage is empty (redacted), preview MUST be empty.
+  // We ignore reasoning suggestion in this case to prevent leak.
+  const preview = normalizedMessage 
+    ? (muPreview ? muPreview : buildPreview(normalizedMessage)) 
+    : "";
 
   const nextSignalCodes = Array.from(
     new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
