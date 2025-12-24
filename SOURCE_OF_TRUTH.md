@@ -376,6 +376,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 
 ---
 
+#### HALO — Migration & Boundary Readiness Plan (Baseline v0.3).md
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%94%20Migration%20%26%20Boundary%20Readiness%20Plan%20(Baseline%20v0.3).md
+
+---
+
 ## 5.3 Mandatory Pre-Read (Hard Gate)
 
 Before the assistant does **ANY** of the following:
