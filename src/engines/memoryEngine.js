@@ -10,6 +10,8 @@ const { buildPreview } = require("../utils/helpers");
 // File persistence setup
 const DATA_DIR = path.join(__dirname, "../../data");
 const MEMORY_FILE = path.join(DATA_DIR, "memory_store.json");
+const MEMORY_FILE_TMP = path.join(DATA_DIR, "memory_store.json.tmp");
+const MEMORY_FILE_BAK = path.join(DATA_DIR, "memory_store.json.bak");
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -19,15 +21,37 @@ if (!fs.existsSync(DATA_DIR)) {
 // In-memory cache
 let memoryStore = {};
 
+function loadMemoryFromDisk(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath, "utf-8");
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") return null;
+  return parsed;
+}
+
 // Load from disk on startup
 if (fs.existsSync(MEMORY_FILE)) {
   try {
-    const raw = fs.readFileSync(MEMORY_FILE, "utf-8");
-    memoryStore = JSON.parse(raw);
-    console.log(`[MemoryEngine] Loaded ${Object.keys(memoryStore).length} user profiles.`);
+    const primary = loadMemoryFromDisk(MEMORY_FILE);
+    if (primary) {
+      memoryStore = primary;
+      console.log(`[MemoryEngine] Loaded ${Object.keys(memoryStore).length} user profiles.`);
+    } else {
+      throw new Error("PRIMARY_MEMORY_LOAD_FAILED");
+    }
   } catch (err) {
-    console.error("[MemoryEngine] Failed to load memory file:", err);
-    memoryStore = {};
+    try {
+      const backup = loadMemoryFromDisk(MEMORY_FILE_BAK);
+      if (backup) {
+        memoryStore = backup;
+        console.log(`[MemoryEngine] Loaded ${Object.keys(memoryStore).length} user profiles (backup).`);
+      } else {
+        throw err;
+      }
+    } catch (err2) {
+      console.error("[MemoryEngine] Failed to load memory file:", err2);
+      memoryStore = {};
+    }
   }
 }
 
@@ -49,10 +73,35 @@ async function saveMemoryToDisk() {
   isSaving = true;
 
   try {
-    // Use fs.promises for non-blocking I/O
-    await fs.promises.writeFile(MEMORY_FILE, JSON.stringify(memoryStore, null, 2));
+    const payload = JSON.stringify(memoryStore, null, 2);
+    await fs.promises.writeFile(MEMORY_FILE_TMP, payload);
+
+    if (fs.existsSync(MEMORY_FILE)) {
+      try {
+        await fs.promises.copyFile(MEMORY_FILE, MEMORY_FILE_BAK);
+      } catch (e) {
+      }
+    }
+
+    try {
+      await fs.promises.rename(MEMORY_FILE_TMP, MEMORY_FILE);
+    } catch (e) {
+      try {
+        if (fs.existsSync(MEMORY_FILE)) {
+          await fs.promises.unlink(MEMORY_FILE);
+        }
+      } catch (e2) {
+      }
+      await fs.promises.rename(MEMORY_FILE_TMP, MEMORY_FILE);
+    }
   } catch (err) {
     console.error("[MemoryEngine] Failed to save memory:", err);
+    try {
+      if (fs.existsSync(MEMORY_FILE_TMP)) {
+        await fs.promises.unlink(MEMORY_FILE_TMP);
+      }
+    } catch (e) {
+    }
   } finally {
     isSaving = false;
     // If a new change happened while we were writing, save again to capture latest state

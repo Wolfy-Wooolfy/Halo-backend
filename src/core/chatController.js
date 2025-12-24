@@ -77,6 +77,19 @@ function buildInternalErrorFallback(langCode) {
   };
 }
 
+function decideRetention(normalizedMessage, safetyInfo, haloContext) {
+  const safety = safetyInfo && typeof safetyInfo === "object" ? safetyInfo : {};
+  const category = typeof safety.category === "string" ? safety.category : "none";
+  const isHighRisk = !!safety.isHighRisk || safety.flag === "high_risk" || safety.level === "extreme";
+  const isCriticalCategory = category === "self_harm" || category === "harm_others" || category === "medical_emergency";
+  const isCrisis = isHighRisk && isCriticalCategory;
+  const storeText = !isCrisis;
+  const storedMessage = storeText ? normalizedMessage : "";
+  const reason = storeText ? "retain_text" : "redact_text_critical_safety";
+  const mode = storeText ? "full" : "redacted";
+  return { mode, storeText, storedMessage, reason };
+}
+
 async function handleChat(req, res) {
   let userId = "anonymous";
   let rawMessage = "";
@@ -89,17 +102,12 @@ async function handleChat(req, res) {
   let haloContext = "general";
   let previousMemory = {};
   let enforcedRoute = { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, reason: "default_fallback" };
-  let policy = {
-    applied: true,
-    rulesTriggered: ["internal_error_fallback"],
-    changes: ["force_templates"],
-    final: { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, model: null }
-  };
+  let policy = { applied: true, rulesTriggered: ["internal_error_fallback"], changes: ["force_templates"], final: { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, model: null } };
+  let retention = { mode: "full", storeText: true, storedMessage: "", reason: "retain_text" };
 
   try {
     const body = req.body || {};
     userId = body.user_id || body.userId || "anonymous";
-    
     rawMessage = body.message || "";
     normalizedMessage = normalizeMessage(rawMessage);
 
@@ -149,9 +157,11 @@ async function handleChat(req, res) {
     debugLog("HALO_ROUTE_ENFORCED:", enforcedRoute);
     debugLog("HALO_POLICY:", policy);
 
+    retention = decideRetention(normalizedMessage, safetyInfo, haloContext);
+
     const memoryResult = updateUserMemory({
       userId,
-      message: normalizedMessage,
+      message: retention.storedMessage,
       context: haloContext,
       language: langCode,
       language_variant: languageVariant,
@@ -175,7 +185,8 @@ async function handleChat(req, res) {
         language_variant_used: languageVariant,
         context_raw: rawContextInfo,
         context_halo: haloContext,
-        safety: safetyInfo
+        safety: safetyInfo,
+        retention: { mode: retention.mode, storeText: retention.storeText, reason: retention.reason }
       }
     };
 
@@ -188,7 +199,6 @@ async function handleChat(req, res) {
     return res.status(200).json(responseBody);
   } catch (err) {
     console.error("HALO /chat error:", err);
-
     const body = req.body || {};
     const fallbackHalo = buildInternalErrorFallback(langCode);
 
@@ -209,6 +219,7 @@ async function handleChat(req, res) {
         context_raw: rawContextInfo,
         context_halo: haloContext,
         safety: safetyInfo,
+        retention: { mode: retention.mode, storeText: retention.storeText, reason: retention.reason },
         error: "internal_error"
       }
     };
