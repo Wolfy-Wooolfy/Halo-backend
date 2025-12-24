@@ -381,6 +381,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 
 ---
 
+### HALO — Phase-3 Execution Blueprint (Baseline v0.3).md
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%94%20Phase-3%20Execution%20Blueprint%20(Baseline%20v0.3).md
+
+---
+
 ## 5.3 Mandatory Pre-Read (Hard Gate)
 
 Before the assistant does **ANY** of the following:
