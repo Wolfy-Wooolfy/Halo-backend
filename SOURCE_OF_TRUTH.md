@@ -386,6 +386,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 
 ---
 
+### HALO — Identity Boundary Spec (Phase 3-A, Baseline v0.3).md
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%94%20Identity%20Boundary%20Spec%20(Phase%203-A%2C%20Baseline%20v0.3).md
+
+---
+
 ## 5.3 Mandatory Pre-Read (Hard Gate)
 
 Before the assistant does **ANY** of the following:
