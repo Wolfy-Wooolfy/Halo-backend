@@ -391,6 +391,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 
 ---
 
+### HALO — Memory Interface Abstraction Spec (Phase 3-B, Baseline v0.3).md
+RAW: 
+
+---
+
 ## 5.3 Mandatory Pre-Read (Hard Gate)
 
 Before the assistant does **ANY** of the following:
