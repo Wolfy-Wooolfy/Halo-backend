@@ -8,8 +8,8 @@
     "lastLanguage": "ar",
     "lastSafetyFlag": "high_stress",
     "lastMood": "stressed",
-    "lastUpdatedAt": "2025-12-24T12:31:39.802Z",
-    "interactionCount": 9,
+    "lastUpdatedAt": "2025-12-24T12:48:14.926Z",
+    "interactionCount": 11,
     "moodHistory": [
       {
         "at": "2025-12-22T13:58:12.327Z",
@@ -64,6 +64,18 @@
         "context": "emotional_discomfort",
         "safetyFlag": "high_stress",
         "mood": "stressed"
+      },
+      {
+        "at": "2025-12-24T12:31:41.738Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-24T12:48:14.926Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
       }
     ],
     "lastTopic": "",
@@ -76,18 +88,18 @@
           "type": "SMU",
           "label": "emotional_discomfort",
           "dimension": "general",
-          "weight": 40,
+          "weight": 45,
           "trustLevel": "logical",
-          "recurrence": 7,
+          "recurrence": 8,
           "created": "2025-12-22T13:58:12.325Z",
-          "lastUpdated": "2025-12-24T12:31:39.797Z"
+          "lastUpdated": "2025-12-24T12:48:14.654Z"
         }
       ],
       "dimensions": {
         "work": {
-          "score": 4,
+          "score": 6,
           "trend": "stable",
-          "lastActive": "2025-12-24T12:31:14.307Z"
+          "lastActive": "2025-12-24T12:31:41.737Z"
         },
         "self": {
           "score": 0,
@@ -123,20 +135,20 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-24T12:31:39.797Z",
+        "lastAnalysis": "2025-12-24T12:48:14.654Z",
         "createdAt": "2025-12-22T13:58:08.966Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-24T12:31:39.802Z",
+      "lastTick": "2025-12-24T12:48:14.923Z",
       "neurons": {
         "stress": 1,
-        "fatigue": 0.2151660833333333,
-        "focus": 0.08483391666666668,
-        "trust": 0.16865166083333336
+        "fatigue": 0.2875238333333333,
+        "focus": 0.062476166666666694,
+        "trust": 0.18837523833333336
       },
-      "delta_hours": 0.0070819444444444445
+      "delta_hours": 0.2758847222222222
     },
     "timeline": [],
     "patterns": [
@@ -145,8 +157,8 @@
         "type": "cyclical_mood",
         "trigger": "Wednesday afternoon",
         "effect": "stressed",
-        "confidence": 0.71,
-        "lastDetected": "2025-12-24T12:31:39.804Z"
+        "confidence": 0.67,
+        "lastDetected": "2025-12-24T12:48:14.928Z"
       }
     ]
   }

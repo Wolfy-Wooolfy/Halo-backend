@@ -24,12 +24,13 @@ let memoryStore = {};
 function loadMemoryFromDisk(filePath) {
   if (!fs.existsSync(filePath)) return null;
   const raw = fs.readFileSync(filePath, "utf-8");
+  // This will throw if JSON is corrupted
   const parsed = JSON.parse(raw);
   if (!parsed || typeof parsed !== "object") return null;
   return parsed;
 }
 
-// Load from disk on startup
+// --- Startup Logic with Fallback ---
 if (fs.existsSync(MEMORY_FILE)) {
   try {
     const primary = loadMemoryFromDisk(MEMORY_FILE);
@@ -40,19 +41,38 @@ if (fs.existsSync(MEMORY_FILE)) {
       throw new Error("PRIMARY_MEMORY_LOAD_FAILED");
     }
   } catch (err) {
+    console.warn("[MemoryEngine] Primary memory load failed. Attempting backup...", err.message);
     try {
       const backup = loadMemoryFromDisk(MEMORY_FILE_BAK);
       if (backup) {
         memoryStore = backup;
-        console.log(`[MemoryEngine] Loaded ${Object.keys(memoryStore).length} user profiles (backup).`);
+        console.log(`[MemoryEngine] Recovered ${Object.keys(memoryStore).length} user profiles from BACKUP.`);
       } else {
-        throw err;
+        throw new Error("BACKUP_MEMORY_LOAD_FAILED");
       }
     } catch (err2) {
-      console.error("[MemoryEngine] Failed to load memory file:", err2);
+      console.error("[MemoryEngine] CRITICAL: Failed to load memory from both primary and backup.", err2.message);
+      // Fallback to empty store (New System State)
       memoryStore = {};
     }
   }
+} else {
+    // If primary file is missing but backup exists (e.g. accidental deletion), try backup
+    if (fs.existsSync(MEMORY_FILE_BAK)) {
+        try {
+            const backup = loadMemoryFromDisk(MEMORY_FILE_BAK);
+            if (backup) {
+                memoryStore = backup;
+                console.log(`[MemoryEngine] Primary missing. Loaded ${Object.keys(memoryStore).length} profiles from BACKUP.`);
+            }
+        } catch(e) {
+            console.error("[MemoryEngine] Backup also failed/corrupt.", e.message);
+            memoryStore = {};
+        }
+    } else {
+        console.log("[MemoryEngine] No existing memory found. Starting fresh.");
+        memoryStore = {};
+    }
 }
 
 // Async Save State Flags
@@ -60,8 +80,10 @@ let isSaving = false;
 let saveQueued = false;
 
 /**
- * Saves memory to disk asynchronously with a queue mechanism.
- * This prevents blocking the Event Loop and ensures data integrity during rapid updates.
+ * Saves memory to disk safely:
+ * 1. Write to .tmp
+ * 2. Backup current .json to .bak
+ * 3. Rename .tmp to .json (Atomic Replace)
  */
 async function saveMemoryToDisk() {
   // If a save is already in progress, mark a queue flag to run again immediately after.
@@ -74,23 +96,30 @@ async function saveMemoryToDisk() {
 
   try {
     const payload = JSON.stringify(memoryStore, null, 2);
+    
+    // 1. Write to temporary file first
     await fs.promises.writeFile(MEMORY_FILE_TMP, payload);
 
+    // 2. Create/Refresh backup from current primary (if exists)
     if (fs.existsSync(MEMORY_FILE)) {
       try {
         await fs.promises.copyFile(MEMORY_FILE, MEMORY_FILE_BAK);
       } catch (e) {
+        console.warn("[MemoryEngine] Backup creation failed (non-critical):", e.message);
       }
     }
 
+    // 3. Atomic replace: Rename .tmp -> .json
     try {
       await fs.promises.rename(MEMORY_FILE_TMP, MEMORY_FILE);
     } catch (e) {
+      // Windows fallback: unlink then rename if target exists and locked
       try {
         if (fs.existsSync(MEMORY_FILE)) {
           await fs.promises.unlink(MEMORY_FILE);
         }
       } catch (e2) {
+        // ignore unlink error
       }
       await fs.promises.rename(MEMORY_FILE_TMP, MEMORY_FILE);
     }
@@ -101,6 +130,7 @@ async function saveMemoryToDisk() {
         await fs.promises.unlink(MEMORY_FILE_TMP);
       }
     } catch (e) {
+      // ignore cleanup error
     }
   } finally {
     isSaving = false;
