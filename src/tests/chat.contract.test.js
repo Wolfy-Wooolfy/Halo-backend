@@ -21,9 +21,15 @@ function toBase64Url(jsonOrString) {
 }
 
 function sign(data) {
-  return crypto.createHmac("sha256", process.env.HALO_IDENTITY_SECRET)
+  const signature = crypto.createHmac("sha256", process.env.HALO_IDENTITY_SECRET)
     .update(data)
     .digest("base64");
+    
+  // MATCHING ENGINE LOGIC: Base64Url
+  return signature
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 function generateToken(userId) {
@@ -107,8 +113,9 @@ describe("HALO Chat API Contract", () => {
       });
 
     expect(res.statusCode).toEqual(200);
-    // Should assign an anonymous ID
-    expect(res.body.user_id).toMatch(/^anonymous_/);
+    
+    // UPDATED: Expect deterministic anonymous ID
+    expect(res.body.user_id).toBe("anonymous");
     
     // Check Persistence Flag
     expect(res.body.meta.identity.type).toBe("anonymous");
@@ -221,4 +228,34 @@ describe("Privacy & Retention Protocols", () => {
     expect(res.body.meta.identity.persisted).toBe(true);
   });
 
+});
+
+describe("Security Fail-Closed Logic", () => {
+  test("SECURITY: Should Fail-Closed to Anonymous if Secret is Missing (Reloads App)", async () => {
+      // 1. Save and Unset Secret
+      const originalSecret = process.env.HALO_IDENTITY_SECRET;
+      delete process.env.HALO_IDENTITY_SECRET;
+
+      // 2. Clear Modules to force re-evaluation of const SECRET in identityEngine
+      jest.resetModules();
+      
+      // 3. Re-require App (this triggers IdentityEngine to load with no secret)
+      const appNoSecret = require("../../server");
+
+      try {
+        // 4. Test
+        const res = await request(appNoSecret)
+            .post("/api/chat")
+            .send({ message: "Should be anonymous due to missing secret" });
+
+        // 5. Verification
+        expect(res.statusCode).toBe(200);
+        expect(res.body.meta.identity.type).toBe("anonymous");
+        expect(res.body.user_id).toBe("anonymous"); // Deterministic Fallback
+        
+      } finally {
+        // 6. Restore Secret for any potential future tests in this run
+        process.env.HALO_IDENTITY_SECRET = originalSecret;
+      }
+  });
 });

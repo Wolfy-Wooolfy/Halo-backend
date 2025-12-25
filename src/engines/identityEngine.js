@@ -42,11 +42,17 @@ function fromBase64Url(str) {
 }
 
 /**
- * Creates HMAC Signature
+ * Creates HMAC Signature (Base64Url Encoded)
  */
 function sign(data) {
   if (!SECRET) return null; // Hard Fail
-  return crypto.createHmac("sha256", SECRET).update(data).digest("base64");
+  const signature = crypto.createHmac("sha256", SECRET).update(data).digest("base64");
+  
+  // Enforce Base64Url (RFC 4648)
+  return signature
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 /**
@@ -54,7 +60,7 @@ function sign(data) {
  */
 function createAnonymous() {
   return {
-    identityId: "anonymous_" + crypto.randomUUID().substring(0, 8),
+    identityId: "anonymous", // DETERMINISTIC: Fixed ID for non-identified users
     type: "anonymous",
     canPersist: false, // HARD RULE: Anonymous cannot write persistent memory
     isValid: true
