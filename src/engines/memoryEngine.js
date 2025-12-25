@@ -30,13 +30,20 @@ function loadMemoryFromDisk(filePath) {
   return parsed;
 }
 
+// Helper for Conditional Logging (Silence in Test unless Debug is on)
+function logInfo(message) {
+  if (process.env.NODE_ENV !== "test" || process.env.HALO_DEBUG === "1") {
+    console.log(message);
+  }
+}
+
 // --- Startup Logic with Fallback ---
 if (fs.existsSync(MEMORY_FILE)) {
   try {
     const primary = loadMemoryFromDisk(MEMORY_FILE);
     if (primary) {
       memoryStore = primary;
-      console.log(`[MemoryEngine] Loaded ${Object.keys(memoryStore).length} user profiles.`);
+      logInfo(`[MemoryEngine] Loaded ${Object.keys(memoryStore).length} user profiles.`);
     } else {
       throw new Error("PRIMARY_MEMORY_LOAD_FAILED");
     }
@@ -46,7 +53,7 @@ if (fs.existsSync(MEMORY_FILE)) {
       const backup = loadMemoryFromDisk(MEMORY_FILE_BAK);
       if (backup) {
         memoryStore = backup;
-        console.log(`[MemoryEngine] Recovered ${Object.keys(memoryStore).length} user profiles from BACKUP.`);
+        logInfo(`[MemoryEngine] Recovered ${Object.keys(memoryStore).length} user profiles from BACKUP.`);
       } else {
         throw new Error("BACKUP_MEMORY_LOAD_FAILED");
       }
@@ -63,14 +70,14 @@ if (fs.existsSync(MEMORY_FILE)) {
             const backup = loadMemoryFromDisk(MEMORY_FILE_BAK);
             if (backup) {
                 memoryStore = backup;
-                console.log(`[MemoryEngine] Primary missing. Loaded ${Object.keys(memoryStore).length} profiles from BACKUP.`);
+                logInfo(`[MemoryEngine] Primary missing. Loaded ${Object.keys(memoryStore).length} profiles from BACKUP.`);
             }
         } catch(e) {
             console.error("[MemoryEngine] Backup also failed/corrupt.", e.message);
             memoryStore = {};
         }
     } else {
-        console.log("[MemoryEngine] No existing memory found. Starting fresh.");
+        logInfo("[MemoryEngine] No existing memory found. Starting fresh.");
         memoryStore = {};
     }
 }
