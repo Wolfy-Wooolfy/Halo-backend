@@ -177,8 +177,8 @@
     "lastLanguage": "en",
     "lastSafetyFlag": "high_stress",
     "lastMood": "stressed",
-    "lastUpdatedAt": "2025-12-25T13:54:15.542Z",
-    "interactionCount": 15,
+    "lastUpdatedAt": "2025-12-25T14:27:52.111Z",
+    "interactionCount": 17,
     "moodHistory": [
       {
         "at": "2025-12-24T12:53:22.348Z",
@@ -269,6 +269,18 @@
         "context": "emotional_discomfort",
         "safetyFlag": "high_stress",
         "mood": "stressed"
+      },
+      {
+        "at": "2025-12-25T14:18:09.025Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      },
+      {
+        "at": "2025-12-25T14:27:52.109Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
       }
     ],
     "lastTopic": "",
@@ -281,18 +293,18 @@
           "type": "SMU",
           "label": "emotional_discomfort",
           "dimension": "work",
-          "weight": 80,
+          "weight": 90,
           "trustLevel": "logical",
-          "recurrence": 15,
+          "recurrence": 17,
           "created": "2025-12-24T12:53:22.346Z",
-          "lastUpdated": "2025-12-25T13:54:15.535Z"
+          "lastUpdated": "2025-12-25T14:27:52.103Z"
         }
       ],
       "dimensions": {
         "work": {
           "score": 0,
           "trend": "stable",
-          "lastActive": "2025-12-25T13:54:15.535Z"
+          "lastActive": "2025-12-25T14:27:52.103Z"
         },
         "self": {
           "score": 0,
@@ -328,20 +340,20 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-25T13:54:15.535Z",
+        "lastAnalysis": "2025-12-25T14:27:52.103Z",
         "createdAt": "2025-12-24T12:53:20.801Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-25T13:54:15.539Z",
+      "lastTick": "2025-12-25T14:27:52.108Z",
       "neurons": {
         "stress": 1,
-        "fatigue": 0.1866032777777778,
-        "focus": 0.31339672222222226,
-        "trust": 0.22498522472222232
+        "fatigue": 0.2305874722222222,
+        "focus": 0.26941252777777785,
+        "trust": 0.2444250666666668
       },
-      "delta_hours": 0.08446666666666666
+      "delta_hours": 0.16196777777777777
     },
     "timeline": [],
     "patterns": [
@@ -351,7 +363,7 @@
         "trigger": "Wednesday afternoon",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-25T13:54:15.541Z"
+        "lastDetected": "2025-12-25T14:27:52.110Z"
       },
       {
         "id": "pat_Thursday_afternoon_stressed",
@@ -359,10 +371,10 @@
         "trigger": "Thursday afternoon",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-25T13:54:15.541Z"
+        "lastDetected": "2025-12-25T14:27:52.111Z"
       }
     ],
-    "_version": 9
+    "_version": 11
   },
   "test-user-ar": {
     "userId": "test-user-ar",
@@ -373,8 +385,8 @@
     "lastLanguage": "ar",
     "lastSafetyFlag": "high_stress",
     "lastMood": "stressed",
-    "lastUpdatedAt": "2025-12-25T13:54:16.436Z",
-    "interactionCount": 15,
+    "lastUpdatedAt": "2025-12-25T14:27:53.101Z",
+    "interactionCount": 17,
     "moodHistory": [
       {
         "at": "2025-12-24T12:53:23.404Z",
@@ -465,6 +477,18 @@
         "context": "emotional_discomfort",
         "safetyFlag": "high_stress",
         "mood": "stressed"
+      },
+      {
+        "at": "2025-12-25T14:18:09.961Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
+      },
+      {
+        "at": "2025-12-25T14:27:53.101Z",
+        "context": "emotional_discomfort",
+        "safetyFlag": "high_stress",
+        "mood": "stressed"
       }
     ],
     "lastTopic": "",
@@ -477,11 +501,11 @@
           "type": "SMU",
           "label": "emotional_discomfort",
           "dimension": "stress",
-          "weight": 80,
+          "weight": 90,
           "trustLevel": "logical",
-          "recurrence": 15,
+          "recurrence": 17,
           "created": "2025-12-24T12:53:23.404Z",
-          "lastUpdated": "2025-12-25T13:54:16.435Z"
+          "lastUpdated": "2025-12-25T14:27:53.100Z"
         }
       ],
       "dimensions": {
@@ -513,7 +537,7 @@
         "stress": {
           "score": 0,
           "trend": "stable",
-          "lastActive": "2025-12-25T13:54:16.435Z"
+          "lastActive": "2025-12-25T14:27:53.100Z"
         },
         "motivation": {
           "score": 0,
@@ -524,20 +548,20 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-25T13:54:16.435Z",
+        "lastAnalysis": "2025-12-25T14:27:53.100Z",
         "createdAt": "2025-12-24T12:53:22.405Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-25T13:54:16.435Z",
+      "lastTick": "2025-12-25T14:27:53.100Z",
       "neurons": {
         "stress": 1,
-        "fatigue": 0.1866152777777778,
-        "focus": 0.3133847222222223,
-        "trust": 0.22498526916666675
+        "fatigue": 0.23059680555555556,
+        "focus": 0.26940319444444455,
+        "trust": 0.24442508444444455
       },
-      "delta_hours": 0.084475
+      "delta_hours": 0.16198305555555556
     },
     "timeline": [],
     "patterns": [
@@ -547,7 +571,7 @@
         "trigger": "Wednesday afternoon",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-25T13:54:16.436Z"
+        "lastDetected": "2025-12-25T14:27:53.101Z"
       },
       {
         "id": "pat_Thursday_afternoon_stressed",
@@ -555,10 +579,10 @@
         "trigger": "Thursday afternoon",
         "effect": "stressed",
         "confidence": 1,
-        "lastDetected": "2025-12-25T13:54:16.436Z"
+        "lastDetected": "2025-12-25T14:27:53.101Z"
       }
     ],
-    "_version": 9
+    "_version": 11
   },
   "test-user-empty": {
     "userId": "test-user-empty",
@@ -569,8 +593,8 @@
     "lastLanguage": "en",
     "lastSafetyFlag": "none",
     "lastMood": "neutral",
-    "lastUpdatedAt": "2025-12-25T13:54:16.460Z",
-    "interactionCount": 15,
+    "lastUpdatedAt": "2025-12-25T14:27:53.138Z",
+    "interactionCount": 17,
     "moodHistory": [
       {
         "at": "2025-12-24T12:53:23.435Z",
@@ -661,6 +685,18 @@
         "context": "general",
         "safetyFlag": "none",
         "mood": "neutral"
+      },
+      {
+        "at": "2025-12-25T14:18:09.992Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-25T14:27:53.137Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
       }
     ],
     "lastTopic": "",
@@ -708,24 +744,24 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-25T13:54:16.460Z",
+        "lastAnalysis": "2025-12-25T14:27:53.137Z",
         "createdAt": "2025-12-24T12:53:23.433Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-25T13:54:16.460Z",
+      "lastTick": "2025-12-25T14:27:53.137Z",
       "neurons": {
         "stress": 0,
-        "fatigue": 0.18661569444444442,
+        "fatigue": 0.23059688888888885,
         "focus": 0.5,
-        "trust": 0.22498527083333347
+        "trust": 0.24442508277777794
       },
-      "delta_hours": 0.08447416666666667
+      "delta_hours": 0.161985
     },
     "timeline": [],
     "patterns": [],
-    "_version": 9
+    "_version": 11
   },
   "test-privacy-risk": {
     "userId": "test-privacy-risk",
@@ -736,8 +772,8 @@
     "lastLanguage": "en",
     "lastSafetyFlag": "high_risk",
     "lastMood": "crisis",
-    "lastUpdatedAt": "2025-12-25T13:54:16.525Z",
-    "interactionCount": 15,
+    "lastUpdatedAt": "2025-12-25T14:27:53.178Z",
+    "interactionCount": 17,
     "moodHistory": [
       {
         "at": "2025-12-24T12:53:23.466Z",
@@ -828,6 +864,18 @@
         "context": "general",
         "safetyFlag": "high_risk",
         "mood": "crisis"
+      },
+      {
+        "at": "2025-12-25T14:18:10.079Z",
+        "context": "general",
+        "safetyFlag": "high_risk",
+        "mood": "crisis"
+      },
+      {
+        "at": "2025-12-25T14:27:53.178Z",
+        "context": "general",
+        "safetyFlag": "high_risk",
+        "mood": "crisis"
       }
     ],
     "lastTopic": "",
@@ -875,20 +923,20 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-25T13:54:16.524Z",
+        "lastAnalysis": "2025-12-25T14:27:53.177Z",
         "createdAt": "2025-12-24T12:53:23.464Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-25T13:54:16.524Z",
+      "lastTick": "2025-12-25T14:27:53.178Z",
       "neurons": {
         "stress": 1,
-        "fatigue": 0.1866155,
+        "fatigue": 0.23059733333333332,
         "focus": 0.5,
-        "trust": 0.224985261388889
+        "trust": 0.24442507972222235
       },
-      "delta_hours": 0.08448111111111112
+      "delta_hours": 0.1619722222222222
     },
     "timeline": [
       {
@@ -1025,6 +1073,24 @@
         "dimension": "general",
         "mood": "crisis",
         "importance": "normal"
+      },
+      {
+        "id": "evt_1766672290079",
+        "date": "2025-12-25T14:18:10.079Z",
+        "type": "EMOTIONAL_SPIKE_HIGH",
+        "summary": "",
+        "dimension": "general",
+        "mood": "crisis",
+        "importance": "normal"
+      },
+      {
+        "id": "evt_1766672873178",
+        "date": "2025-12-25T14:27:53.178Z",
+        "type": "EMOTIONAL_SPIKE_HIGH",
+        "summary": "",
+        "dimension": "general",
+        "mood": "crisis",
+        "importance": "normal"
       }
     ],
     "patterns": [
@@ -1034,7 +1100,7 @@
         "trigger": "Wednesday afternoon",
         "effect": "crisis",
         "confidence": 1,
-        "lastDetected": "2025-12-25T13:54:16.525Z"
+        "lastDetected": "2025-12-25T14:27:53.178Z"
       },
       {
         "id": "pat_Thursday_afternoon_crisis",
@@ -1042,10 +1108,10 @@
         "trigger": "Thursday afternoon",
         "effect": "crisis",
         "confidence": 1,
-        "lastDetected": "2025-12-25T13:54:16.525Z"
+        "lastDetected": "2025-12-25T14:27:53.178Z"
       }
     ],
-    "_version": 9
+    "_version": 11
   },
   "test-privacy-normal": {
     "userId": "test-privacy-normal",
@@ -1056,8 +1122,8 @@
     "lastLanguage": "en",
     "lastSafetyFlag": "none",
     "lastMood": "neutral",
-    "lastUpdatedAt": "2025-12-25T13:49:13.188Z",
-    "interactionCount": 14,
+    "lastUpdatedAt": "2025-12-25T14:18:10.905Z",
+    "interactionCount": 16,
     "moodHistory": [
       {
         "at": "2025-12-24T12:53:25.396Z",
@@ -1142,6 +1208,18 @@
         "context": "general",
         "safetyFlag": "none",
         "mood": "neutral"
+      },
+      {
+        "at": "2025-12-25T13:54:17.309Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
+      },
+      {
+        "at": "2025-12-25T14:18:10.905Z",
+        "context": "general",
+        "safetyFlag": "none",
+        "mood": "neutral"
       }
     ],
     "lastTopic": "",
@@ -1171,9 +1249,9 @@
           "lastActive": null
         },
         "clarity": {
-          "score": 28,
+          "score": 32,
           "trend": "stable",
-          "lastActive": "2025-12-25T13:49:13.187Z"
+          "lastActive": "2025-12-25T14:18:10.905Z"
         },
         "stress": {
           "score": 0,
@@ -1189,24 +1267,24 @@
       "meta": {
         "stage": "seed",
         "stageLabel": "Seed Layer",
-        "lastAnalysis": "2025-12-25T13:49:13.187Z",
+        "lastAnalysis": "2025-12-25T14:18:10.905Z",
         "createdAt": "2025-12-24T12:53:23.514Z",
         "globalTrustScore": 50
       }
     },
     "lnnState": {
-      "lastTick": "2025-12-25T13:49:13.188Z",
+      "lastTick": "2025-12-25T14:18:10.905Z",
       "neurons": {
         "stress": 0,
-        "fatigue": 0.14507483333333332,
-        "focus": 0.9870912499999998,
-        "trust": 0.21507005777777782
+        "fatigue": 0.19680491666666666,
+        "focus": 1,
+        "trust": 0.23458735861111116
       },
-      "delta_hours": 0.008607222222222223
+      "delta_hours": 0.39822111111111114
     },
     "timeline": [],
     "patterns": [],
-    "_version": 8
+    "_version": 10
   },
   "anonymous_aa85fbc3": {
     "userId": "anonymous_aa85fbc3",

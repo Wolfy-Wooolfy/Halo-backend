@@ -21,10 +21,11 @@ function mapContextForHalo(category) {
   return "general";
 }
 
-function debugLog(label, value) {
-  if (process.env.HALO_DEBUG === "1") {
-    console.log(label, value);
-  }
+// UNIFIED LOGGER GATE (Strict Test Silence)
+// Visible in Dev/Prod, ABSOLUTELY SILENT in Test
+function logHaloInfo(label, value) {
+  if (process.env.NODE_ENV === "test") return;
+  console.log(label, value);
 }
 
 function normalizePolicy(policy) {
@@ -162,9 +163,9 @@ async function handleChat(req, res) {
       policy
     });
 
-    debugLog("HALO_ENGINE:", halo && halo.engine ? halo.engine : null);
-    debugLog("HALO_ROUTE_ENFORCED:", enforcedRoute);
-    debugLog("HALO_POLICY:", policy);
+    logHaloInfo("HALO_ENGINE:", halo && halo.engine ? halo.engine : null);
+    logHaloInfo("HALO_ROUTE_ENFORCED:", enforcedRoute);
+    logHaloInfo("HALO_POLICY:", policy);
 
     retention = decideRetention(normalizedMessage, safetyInfo, haloContext);
 
@@ -186,7 +187,7 @@ async function handleChat(req, res) {
     if (identityContext.canPersist) {
       memoryCommitResult = await commit(identityContext, updatedSnapshot, memoryVersion);
     } else {
-      debugLog("HALO_IDENTITY:", `Anonymous/Transient session. Persistence skipped for ${userId}`);
+      logHaloInfo("HALO_IDENTITY:", `Anonymous/Transient session. Persistence skipped for ${userId}`);
     }
 
     const responseBody = {
