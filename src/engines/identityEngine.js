@@ -1,60 +1,166 @@
 const crypto = require("crypto");
 
-// Fallback secret ONLY for dev/test if env is missing. 
-// In prod, HALO_IDENTITY_SECRET must be set.
-const SECRET = process.env.HALO_IDENTITY_SECRET || "dev-secret-do-not-use-in-prod-halo-core";
+/**
+ * HALO Identity Engine - Phase 3-C Hardened
+ * STRICT SECURITY MODE: Fail-Closed
+ */
 
-function sign(data) {
-  return crypto.createHmac("sha256", SECRET).update(data).digest("hex");
+// 1. SECRET MANAGEMENT (Fail-Closed)
+// We DO NOT provide a fallback. If env is missing, the engine degrades to anonymous-only.
+const SECRET = process.env.HALO_IDENTITY_SECRET; 
+
+// Default TTL: 30 Days in seconds
+const DEFAULT_TTL = 30 * 24 * 60 * 60; 
+const TTL_SECONDS = parseInt(process.env.HALO_IDENTITY_TTL_SECONDS) || DEFAULT_TTL;
+
+/**
+ * Helper: Base64URL Encoding (RFC 4648)
+ * Needed to ensure token is URL-safe and compact
+ */
+function toBase64Url(jsonOrString) {
+  const input = typeof jsonOrString === 'string' ? jsonOrString : JSON.stringify(jsonOrString);
+  return Buffer.from(input).toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 /**
- * Resolves IdentityContext from Request Headers
- * Implements Phase 3-A: Identity Boundary
+ * Helper: Base64URL Decoding
  */
-function resolveIdentity(req) {
-  const authHeader = req.headers["x-halo-identity"];
-  
-  // Default: Anonymous (Transient)
-  const anonymousContext = {
+function fromBase64Url(str) {
+  if (typeof str !== 'string') return null;
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) {
+    str += '=';
+  }
+  try {
+    return Buffer.from(str, 'base64').toString('utf8');
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Creates HMAC Signature
+ */
+function sign(data) {
+  if (!SECRET) return null; // Hard Fail
+  return crypto.createHmac("sha256", SECRET).update(data).digest("base64");
+}
+
+/**
+ * Generates an Anonymous Context (Safe Fallback)
+ */
+function createAnonymous() {
+  return {
     identityId: "anonymous_" + crypto.randomUUID().substring(0, 8),
     type: "anonymous",
     canPersist: false, // HARD RULE: Anonymous cannot write persistent memory
     isValid: true
   };
+}
+
+/**
+ * Resolves IdentityContext from Request Headers
+ * Implements Phase 3-C: Hardened Token Verification (Exp + Sig + Length Check)
+ */
+function resolveIdentity(req) {
+  // CRITICAL: If no secret is configured, we cannot verify anything.
+  // Must fail closed to Anonymous.
+  if (!SECRET) {
+    // Optional: Log warning here in a real logger
+    return createAnonymous();
+  }
+
+  const authHeader = req.headers["x-halo-identity"];
 
   if (!authHeader || typeof authHeader !== "string") {
-    return anonymousContext;
+    return createAnonymous();
   }
 
-  const [id, signature] = authHeader.split(".");
-  if (!id || !signature) {
-    return anonymousContext;
+  // Token Format: payloadBase64Url.signature
+  const parts = authHeader.split(".");
+  if (parts.length !== 2) {
+    return createAnonymous();
   }
 
-  // Verify Signature
-  const expectedSignature = sign(id);
-  if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+  const [payloadB64, providedSig] = parts;
+
+  // 1. Verify Signature
+  const expectedSig = sign(payloadB64);
+  if (!expectedSig) return createAnonymous();
+
+  const providedBuf = Buffer.from(providedSig);
+  const expectedBuf = Buffer.from(expectedSig);
+
+  // Anti-DoS: Check lengths BEFORE timingSafeEqual to prevent throwing
+  if (providedBuf.length !== expectedBuf.length) {
+    return createAnonymous();
+  }
+
+  if (!crypto.timingSafeEqual(providedBuf, expectedBuf)) {
+    return createAnonymous();
+  }
+
+  // 2. Decode Payload & Verify Expiry (TTL)
+  try {
+    const jsonStr = fromBase64Url(payloadB64);
+    if (!jsonStr) return createAnonymous();
+    
+    const payload = JSON.parse(jsonStr);
+
+    // Check Expiry
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && now > payload.exp) {
+      // Token Expired
+      return createAnonymous();
+    }
+
+    // Check Subject
+    if (!payload.sub) {
+      return createAnonymous();
+    }
+
+    // Success: Return Issued Identity
     return {
-      identityId: id,
+      identityId: payload.sub,
       type: "issued",
       canPersist: true, // Issued identities allowed to persist
       isValid: true
     };
-  }
 
-  // If signature fails, degrade to anonymous immediately (Fail-Closed)
-  return anonymousContext;
+  } catch (err) {
+    // Malformed JSON or other parsing error
+    return createAnonymous();
+  }
 }
 
 /**
  * Issues a new Identity Token
- * Used when a user needs to upgrade from anonymous or fresh start
+ * Format: Base64Url(JSON).Signature
  */
 function issueIdentity() {
-  const newId = "user_" + crypto.randomUUID();
-  const signature = sign(newId);
-  return `${newId}.${signature}`;
+  // Fail Closed: If no secret, we cannot issue secure tokens.
+  if (!SECRET) {
+    return null; 
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const userId = "user_" + crypto.randomUUID();
+  
+  const payload = {
+    sub: userId,
+    iat: now,
+    exp: now + TTL_SECONDS
+  };
+
+  const payloadB64 = toBase64Url(payload);
+  const signature = sign(payloadB64);
+
+  if (!signature) return null;
+
+  return `${payloadB64}.${signature}`;
 }
 
 module.exports = {

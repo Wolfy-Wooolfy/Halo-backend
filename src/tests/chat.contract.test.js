@@ -1,21 +1,49 @@
 const request = require("supertest");
-const app = require("../../server");
 const crypto = require("crypto");
 
-// Setup Secret for Test
-const TEST_SECRET = process.env.HALO_IDENTITY_SECRET || "dev-secret-do-not-use-in-prod-halo-core";
-function sign(data) {
-  return crypto.createHmac("sha256", TEST_SECRET).update(data).digest("hex");
-}
-function generateToken(userId) {
-  const sig = sign(userId);
-  return `${userId}.${sig}`;
+// --- TEST SETUP ---
+// Ensure we match the Hardened Identity Engine Logic
+// 1. Define Secret explicitly for Test Environment
+process.env.HALO_IDENTITY_SECRET = "test-secret-value-for-contract-tests";
+process.env.NODE_ENV = "test";
+process.env.HALO_DEBUG = "0";
+
+// Import App AFTER setting env vars
+const app = require("../../server");
+
+// --- HELPER FOR NEW TOKEN FORMAT ---
+function toBase64Url(jsonOrString) {
+  const input = typeof jsonOrString === 'string' ? jsonOrString : JSON.stringify(jsonOrString);
+  return Buffer.from(input).toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
-// Prevent server from logging during tests
+function sign(data) {
+  return crypto.createHmac("sha256", process.env.HALO_IDENTITY_SECRET)
+    .update(data)
+    .digest("base64");
+}
+
+function generateToken(userId) {
+  // Matches Phase 3-C Token Structure: Payload.Signature
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    sub: userId,
+    iat: now,
+    exp: now + 3600 // 1 hour for test
+  };
+  const payloadB64 = toBase64Url(payload);
+  const signature = sign(payloadB64);
+  return `${payloadB64}.${signature}`;
+}
+
 beforeAll(() => {
-  process.env.NODE_ENV = "test";
-  process.env.HALO_DEBUG = "0"; // Ensure debug output doesn't pollute tests
+  // verify secret is set
+  if (!process.env.HALO_IDENTITY_SECRET) {
+    throw new Error("Test environment must have HALO_IDENTITY_SECRET set for positive tests.");
+  }
 });
 
 afterAll(async () => {
@@ -32,7 +60,6 @@ describe("HALO Chat API Contract", () => {
       .post("/api/chat")
       .set("x-halo-identity", token)
       .send({
-        // user_id in body is now ignored by logic, but sent for backwards compat check
         user_id: userId,
         message: "I feel a bit overwhelmed with work today.",
         language_preference: "en"
@@ -40,7 +67,8 @@ describe("HALO Chat API Contract", () => {
 
     expect(res.statusCode).toEqual(200);
     expect(res.body.ok).toBe(true);
-    expect(res.body.user_id).toBe(userId); // Confirm server accepted ID
+    // The engine extracts ID from token, so it should match the token's subject
+    expect(res.body.user_id).toBe(userId); 
 
     // 1. Core HALO Fields (Cognitive)
     expect(res.body).toHaveProperty("reflection");
@@ -125,7 +153,6 @@ describe("HALO Chat API Contract", () => {
 describe("Privacy & Retention Protocols", () => {
 
   test("CRITICAL: Should REDACT text storage for High-Risk messages (Self-Harm)", async () => {
-    // Enable Debug Mode LOCALLY for this test to inspect the actual memory snapshot
     const originalDebug = process.env.HALO_DEBUG;
     process.env.HALO_DEBUG = "1";
     
@@ -148,28 +175,22 @@ describe("Privacy & Retention Protocols", () => {
         expect(res.statusCode).toEqual(200);
 
         // 1. Verify Retention Logic (Meta Decision)
-        // This confirms the system DECIDED not to store text
         expect(res.body.meta).toBeDefined();
         expect(res.body.meta.retention).toBeDefined();
         expect(res.body.meta.retention.storeText).toBe(false);
         expect(res.body.meta.retention.mode).toBe("redacted");
 
         // 2. Verify ACTUAL Storage via Memory Snapshot (Truth)
-        // We look at what is IN memory, independent of the LLM output
         expect(res.body.memory_snapshot).toBeDefined();
         const snapshot = res.body.memory_snapshot;
 
-        // The preview stored in memory MUST NOT be the raw message
-        // It should be normalized/empty or redacted, but definitely NOT the input
         expect(snapshot.lastMessagePreview).not.toContain("kill myself");
         expect(snapshot.lastMessagePreview).not.toEqual(riskMessage);
 
         // 3. Verify Safety Source of Truth (Meta)
-        // We rely on the engine's meta detection
         expect(res.body.meta.safety.flag).toBe("high_risk");
 
     } finally {
-        // Restore env to avoid side effects on other tests
         process.env.HALO_DEBUG = originalDebug;
     }
   });
@@ -196,7 +217,6 @@ describe("Privacy & Retention Protocols", () => {
     expect(res.body.meta.retention.mode).toBe("full");
 
     // 3. Verify Memory Update (Standard behavior)
-    // For normal messages, we can check memory_update as it should pass through
     expect(res.body.memory_update.last_message_preview).toContain("planning");
     expect(res.body.meta.identity.persisted).toBe(true);
   });
