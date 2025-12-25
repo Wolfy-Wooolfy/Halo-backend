@@ -214,6 +214,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/tests
 
 ---
 
+#### src/tests/llm.readiness.failclosed.test.js
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/src/tests/llm.readiness.failclosed.test.js
+
+---
+
 ### 4.7 Utils
 
 #### src/utils/helpers.js
