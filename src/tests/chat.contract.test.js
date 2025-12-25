@@ -1,5 +1,16 @@
 const request = require("supertest");
 const app = require("../../server");
+const crypto = require("crypto");
+
+// Setup Secret for Test
+const TEST_SECRET = process.env.HALO_IDENTITY_SECRET || "dev-secret-do-not-use-in-prod-halo-core";
+function sign(data) {
+  return crypto.createHmac("sha256", TEST_SECRET).update(data).digest("hex");
+}
+function generateToken(userId) {
+  const sig = sign(userId);
+  return `${userId}.${sig}`;
+}
 
 // Prevent server from logging during tests
 beforeAll(() => {
@@ -13,17 +24,23 @@ afterAll(async () => {
 
 describe("HALO Chat API Contract", () => {
   
-  test("POST /api/chat - Should return valid HALO structure (Reflection/Question/Micro-step)", async () => {
+  test("POST /api/chat - Should return valid HALO structure with Issued Identity", async () => {
+    const userId = "test-user-contract";
+    const token = generateToken(userId);
+
     const res = await request(app)
       .post("/api/chat")
+      .set("x-halo-identity", token)
       .send({
-        user_id: "test-user-contract",
+        // user_id in body is now ignored by logic, but sent for backwards compat check
+        user_id: userId,
         message: "I feel a bit overwhelmed with work today.",
         language_preference: "en"
       });
 
     expect(res.statusCode).toEqual(200);
     expect(res.body.ok).toBe(true);
+    expect(res.body.user_id).toBe(userId); // Confirm server accepted ID
 
     // 1. Core HALO Fields (Cognitive)
     expect(res.body).toHaveProperty("reflection");
@@ -46,13 +63,38 @@ describe("HALO Chat API Contract", () => {
     expect(res.body).toHaveProperty("policy");
     expect(res.body.policy).toHaveProperty("applied");
     expect(res.body.policy).toHaveProperty("final");
+
+    // 4. Identity Check
+    expect(res.body.meta.identity).toBeDefined();
+    expect(res.body.meta.identity.type).toBe("issued");
+    expect(res.body.meta.identity.persisted).toBe(true);
+  });
+
+  test("POST /api/chat - Should Handle Anonymous Request (No Persistence)", async () => {
+    const res = await request(app)
+      .post("/api/chat")
+      // No Header
+      .send({
+        message: "Hello HALO"
+      });
+
+    expect(res.statusCode).toEqual(200);
+    // Should assign an anonymous ID
+    expect(res.body.user_id).toMatch(/^anonymous_/);
+    
+    // Check Persistence Flag
+    expect(res.body.meta.identity.type).toBe("anonymous");
+    expect(res.body.meta.identity.persisted).toBe(false);
   });
 
   test("POST /api/chat - Should handle Arabic input and return Arabic response", async () => {
+    const userId = "test-user-ar";
+    const token = generateToken(userId);
+
     const res = await request(app)
       .post("/api/chat")
+      .set("x-halo-identity", token)
       .send({
-        user_id: "test-user-ar",
         message: "أنا حاسس بتوتر شوية النهاردة",
         language_preference: "ar"
       });
@@ -64,10 +106,13 @@ describe("HALO Chat API Contract", () => {
   });
 
   test("POST /api/chat - Should return 400 or fallback for empty message", async () => {
+    const userId = "test-user-empty";
+    const token = generateToken(userId);
+
     const res = await request(app)
       .post("/api/chat")
+      .set("x-halo-identity", token)
       .send({
-        user_id: "test-user-empty",
         message: "" 
         // normalizer might make this empty string
       });
@@ -85,14 +130,19 @@ describe("Privacy & Retention Protocols", () => {
     process.env.HALO_DEBUG = "1";
     
     try {
+        const userId = "test-privacy-risk";
+        const token = generateToken(userId);
+
         // This message triggers 'self_harm' category in safetyGuard
         const riskMessage = "I want to kill myself and end it all"; 
 
         const res = await request(app)
           .post("/api/chat")
+          .set("x-halo-identity", token)
+          .set("x-halo-debug-token", process.env.HALO_DEBUG_TOKEN || "")
           .send({
-            user_id: "test-privacy-risk",
-            message: riskMessage
+            message: riskMessage,
+            debug_token: process.env.HALO_DEBUG_TOKEN || ""
           });
 
         expect(res.statusCode).toEqual(200);
@@ -124,13 +174,15 @@ describe("Privacy & Retention Protocols", () => {
     }
   });
 
-  test("NORMAL: Should STORE text for Standard messages", async () => {
+  test("NORMAL: Should STORE text for Standard messages with Valid Identity", async () => {
+    const userId = "test-privacy-normal";
+    const token = generateToken(userId);
     const normalMessage = "Just planning my week ahead.";
 
     const res = await request(app)
       .post("/api/chat")
+      .set("x-halo-identity", token)
       .send({
-        user_id: "test-privacy-normal",
         message: normalMessage
       });
 
@@ -146,6 +198,7 @@ describe("Privacy & Retention Protocols", () => {
     // 3. Verify Memory Update (Standard behavior)
     // For normal messages, we can check memory_update as it should pass through
     expect(res.body.memory_update.last_message_preview).toContain("planning");
+    expect(res.body.meta.identity.persisted).toBe(true);
   });
 
 });

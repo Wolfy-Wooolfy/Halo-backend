@@ -1,11 +1,12 @@
 const safetyGuard = require("../engines/safetyGuard");
 const reasoningEngine = require("../engines/reasoningEngine");
-const { getUserMemory, updateUserMemory } = require("../engines/memoryEngine");
+const { load, commit, prepareMemoryUpdate } = require("../engines/memoryEngine");
 const { normalizeMessage } = require("../engines/messageNormalizer");
 const { detectLanguage, resolveLanguageCode, extractLanguageVariant } = require("../engines/languageDetector");
 const { classifyMessage } = require("../engines/contextClassifier");
 const { decideRoute } = require("../engines/routingEngine");
 const { evaluatePolicy } = require("../engines/policyEngine");
+const { resolveIdentity, issueIdentity } = require("../engines/identityEngine");
 
 function mapContextForHalo(category) {
   if (!category) return "general";
@@ -91,7 +92,10 @@ function decideRetention(normalizedMessage, safetyInfo, haloContext) {
 }
 
 async function handleChat(req, res) {
-  let userId = "anonymous";
+  // PHASE 3-C: Identity Resolution (Source of Truth)
+  const identityContext = resolveIdentity(req);
+  const userId = identityContext.identityId; // Must use server-resolved ID
+
   let rawMessage = "";
   let normalizedMessage = "";
   let languageInfo = { language: "mixed", confidence: 0 };
@@ -100,16 +104,23 @@ async function handleChat(req, res) {
   let langCode = "en";
   let languageVariant = "en";
   let haloContext = "general";
-  let previousMemory = {};
+  let previousMemorySnapshot = {};
+  let memoryVersion = 0;
   let enforcedRoute = { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, reason: "default_fallback" };
   let policy = { applied: true, rulesTriggered: ["internal_error_fallback"], changes: ["force_templates"], final: { mode: "fast", useLLM: false, maxTokens: 60, temperature: 0.2, model: null } };
   let retention = { mode: "full", storeText: true, storedMessage: "", reason: "retain_text" };
 
   try {
     const body = req.body || {};
-    userId = body.user_id || body.userId || "anonymous";
+    // Client-asserted user_id is IGNORED for logic, only used for logging if needed
+    
     rawMessage = body.message || "";
     normalizedMessage = normalizeMessage(rawMessage);
+
+    // PHASE 3-B: Load Memory via Interface
+    const loadResult = await load(identityContext);
+    previousMemorySnapshot = loadResult.snapshot;
+    memoryVersion = loadResult.version;
 
     languageInfo = detectLanguage(normalizedMessage);
     rawContextInfo = classifyMessage(normalizedMessage);
@@ -119,8 +130,6 @@ async function handleChat(req, res) {
     languageVariant = extractLanguageVariant(languageInfo);
     haloContext = mapContextForHalo(rawContextInfo.category);
 
-    previousMemory = getUserMemory(userId);
-
     const routeDecision = decideRoute({
       normalizedMessage,
       message: normalizedMessage,
@@ -129,7 +138,7 @@ async function handleChat(req, res) {
       context_halo: haloContext,
       context_raw: rawContextInfo,
       safety: safetyInfo,
-      memory_snapshot: previousMemory
+      memory_snapshot: previousMemorySnapshot
     });
 
     const evaluated = evaluatePolicy({
@@ -147,8 +156,8 @@ async function handleChat(req, res) {
       language_code: langCode,
       context: haloContext,
       safety: safetyInfo,
-      memory: previousMemory || {},
-      lastReasoning: previousMemory && previousMemory.lastReasoning ? previousMemory.lastReasoning : null,
+      memory: previousMemorySnapshot || {},
+      lastReasoning: previousMemorySnapshot && previousMemorySnapshot.lastReasoning ? previousMemorySnapshot.lastReasoning : null,
       route: enforcedRoute,
       policy
     });
@@ -159,9 +168,12 @@ async function handleChat(req, res) {
 
     retention = decideRetention(normalizedMessage, safetyInfo, haloContext);
 
-    const memoryResult = updateUserMemory({
+    // Calculate Memory Update (Logic only)
+    const { updatedSnapshot, delta } = prepareMemoryUpdate(previousMemorySnapshot, {
       userId,
-      message: retention.storedMessage,
+      // FIX: Do NOT pass normalizedMessage here. Use retention.storedMessage only.
+      // This ensures if retention says "redacted", memory engine sees only empty string.
+      message: retention.storedMessage, 
       context: haloContext,
       language: langCode,
       language_variant: languageVariant,
@@ -169,9 +181,17 @@ async function handleChat(req, res) {
       reasoning: halo
     });
 
+    // PHASE 3-C: Commit Memory via Interface
+    let memoryCommitResult = { success: false, reason: "SKIPPED" };
+    if (identityContext.canPersist) {
+      memoryCommitResult = await commit(identityContext, updatedSnapshot, memoryVersion);
+    } else {
+      debugLog("HALO_IDENTITY:", `Anonymous/Transient session. Persistence skipped for ${userId}`);
+    }
+
     const responseBody = {
       ok: true,
-      user_id: userId,
+      user_id: userId, // Return server-resolved ID
       reflection: halo.reflection,
       question: halo.question,
       micro_step: halo.micro_step,
@@ -186,14 +206,15 @@ async function handleChat(req, res) {
         context_raw: rawContextInfo,
         context_halo: haloContext,
         safety: safetyInfo,
-        retention: { mode: retention.mode, storeText: retention.storeText, reason: retention.reason }
+        retention: { mode: retention.mode, storeText: retention.storeText, reason: retention.reason },
+        identity: { type: identityContext.type, persisted: memoryCommitResult.success }
       }
     };
 
     if (shouldExposeDebug(req, body)) {
-      responseBody.memory_snapshot = memoryResult.memory;
-      responseBody.memory_delta = memoryResult.delta;
-      responseBody.previous_memory = previousMemory;
+      responseBody.memory_snapshot = updatedSnapshot;
+      responseBody.memory_delta = delta;
+      responseBody.previous_memory = previousMemorySnapshot;
     }
 
     return res.status(200).json(responseBody);
@@ -220,12 +241,13 @@ async function handleChat(req, res) {
         context_halo: haloContext,
         safety: safetyInfo,
         retention: { mode: retention.mode, storeText: retention.storeText, reason: retention.reason },
-        error: "internal_error"
+        error: "internal_error",
+        identity: { type: identityContext.type }
       }
     };
 
     if (shouldExposeDebug(req, body)) {
-      responseBody.previous_memory = previousMemory;
+      responseBody.previous_memory = previousMemorySnapshot;
       responseBody.normalized_message = normalizedMessage;
     }
 

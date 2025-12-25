@@ -158,6 +158,7 @@ function buildDefaultMemory(userId) {
     lastTopic: "",
     lastSignalCodes: [],
     hesitationSignal: false,
+    _version: 0, // OPTIMISTIC CONCURRENCY TOKEN
     
     // V1.0 SEMANTIC GRAPH
     semanticGraph: createEmptyGraph(),
@@ -182,12 +183,13 @@ function deriveMood(context, safetyFlag) {
   return "neutral";
 }
 
-function getUserMemory(userId) {
+// Internal Accessor (Legacy)
+function getUserMemoryInternal(userId) {
   const id = userId || "anonymous";
   if (!memoryStore[id]) {
     memoryStore[id] = buildDefaultMemory(id);
   }
-  // Data Migration for Phase 2 & Trust Architecture
+  // Data Migration for Phase 2 & Trust Architecture & Phase 3
   if (!memoryStore[id].semanticGraph) memoryStore[id].semanticGraph = createEmptyGraph();
   if (memoryStore[id].semanticGraph.meta.globalTrustScore === undefined) {
     memoryStore[id].semanticGraph.meta.globalTrustScore = 50;
@@ -196,12 +198,80 @@ function getUserMemory(userId) {
   if (!memoryStore[id].createdAt) memoryStore[id].createdAt = new Date().toISOString();
   if (!memoryStore[id].timeline) memoryStore[id].timeline = getInitialTimeline();
   if (!memoryStore[id].patterns) memoryStore[id].patterns = [];
+  if (typeof memoryStore[id]._version !== 'number') memoryStore[id]._version = 0;
   
   return memoryStore[id];
 }
 
+// --------------------------------------------------------
+// PHASE 3-B: MEMORY INTERFACE ABSTRACTION
+// --------------------------------------------------------
+
+/**
+ * LOAD: Fetches memory snapshot bound to identity.
+ * Returns { snapshot, version }
+ */
+async function load(identityContext) {
+  const id = identityContext.identityId;
+  const mem = getUserMemoryInternal(id);
+  
+  // Return a deep copy to prevent mutation outside commit
+  // For this patch, we use a simple JSON clone
+  const snapshot = JSON.parse(JSON.stringify(mem));
+  const version = mem._version;
+
+  return { snapshot, version };
+}
+
+/**
+ * COMMIT: Persists memory snapshot safely.
+ * Enforces Phase 3-C: Identity Persistence Rules & Optimistic Concurrency
+ */
+async function commit(identityContext, nextSnapshot, expectedVersion) {
+  // RULE 1: Identity Must Allow Persistence
+  if (!identityContext.canPersist) {
+    console.warn(`[MemoryEngine] Blocked persistence for identity type: ${identityContext.type}`);
+    return { success: false, reason: "IDENTITY_CANNOT_PERSIST" };
+  }
+
+  const id = identityContext.identityId;
+  const current = getUserMemoryInternal(id);
+
+  // RULE 2: Optimistic Concurrency Check
+  if (current._version !== expectedVersion) {
+    console.warn(`[MemoryEngine] Concurrency conflict for ${id}. Expected ${expectedVersion}, got ${current._version}`);
+    return { success: false, reason: "VERSION_CONFLICT" };
+  }
+
+  // Apply Update
+  const newVersion = current._version + 1;
+  const updatedEntry = {
+    ...nextSnapshot,
+    userId: id, // Ensure ID integrity
+    _version: newVersion,
+    lastUpdatedAt: new Date().toISOString()
+  };
+
+  memoryStore[id] = updatedEntry;
+  
+  // Trigger Disk Save
+  saveMemoryToDisk();
+
+  return { success: true, version: newVersion };
+}
+
+// --------------------------------------------------------
+// LEGACY / HELPER WRAPPERS
+// --------------------------------------------------------
+
+// Deprecated access - mapped to internal for backward compat if needed by other utils,
+// but Controller should use load/commit.
+function getUserMemory(userId) {
+  return getUserMemoryInternal(userId);
+}
+
 function getUserMemorySnapshot(userId) {
-  return getUserMemory(userId || "anonymous");
+  return getUserMemoryInternal(userId || "anonymous");
 }
 
 function asArray(val) {
@@ -209,8 +279,9 @@ function asArray(val) {
   return [];
 }
 
-function updateUserMemory(payload) {
-  const userId = payload.userId || "anonymous";
+// Refactored to be pure logic helper, NOT directly modifying store.
+// The Controller now orchestrates the save via commit().
+function prepareMemoryUpdate(currentSnapshot, payload) {
   const normalizedMessage = payload.normalizedMessage || payload.message || "";
   
   const context = payload.context || "general";
@@ -227,31 +298,26 @@ function updateUserMemory(payload) {
   const muSignalCodes = asArray(mu.last_signal_codes);
   const muHesitation = !!mu.hesitation_signal;
 
-  const current = getUserMemory(userId);
-
   const finalContext = muLastContext ? muLastContext : context;
   const finalSafety = muLastSafetyFlag ? muLastSafetyFlag : safetyFlag;
 
   const mood = deriveMood(finalContext, finalSafety);
   
-  // FIX: Enforce consistency between Stored Message and Preview.
-  // If normalizedMessage is empty (redacted), preview MUST be empty.
-  // We ignore reasoning suggestion in this case to prevent leak.
   const preview = normalizedMessage 
     ? (muPreview ? muPreview : buildPreview(normalizedMessage)) 
     : "";
 
   const nextSignalCodes = Array.from(
-    new Set([...(Array.isArray(current.lastSignalCodes) ? current.lastSignalCodes : []), ...muSignalCodes])
+    new Set([...(Array.isArray(currentSnapshot.lastSignalCodes) ? currentSnapshot.lastSignalCodes : []), ...muSignalCodes])
   ).slice(0, 30);
 
   // --- PHASE 2: Semantic Graph with Trust ---
-  const updatedGraph = updateSemanticGraph(current.semanticGraph, {
+  const updatedGraph = updateSemanticGraph(currentSnapshot.semanticGraph, {
     text: normalizedMessage,
     context: finalContext,
     safety: finalSafety,
     mood: mood,
-    userCreatedAt: current.createdAt
+    userCreatedAt: currentSnapshot.createdAt
   });
 
   let activeDimension = null;
@@ -263,7 +329,7 @@ function updateUserMemory(payload) {
   }
 
   // --- PHASE 2: LNN Tick ---
-  const updatedLNN = tickLNN(current.lnnState, {
+  const updatedLNN = tickLNN(currentSnapshot.lnnState, {
     context: finalContext,
     safety: finalSafety,
     messageLength: normalizedMessage.length,
@@ -271,7 +337,7 @@ function updateUserMemory(payload) {
   });
 
   // --- PHASE 2: Timeline Update ---
-  const updatedTimeline = updateTimeline(current.timeline, {
+  const updatedTimeline = updateTimeline(currentSnapshot.timeline, {
     text: normalizedMessage,
     mood: mood,
     context: finalContext,
@@ -285,8 +351,8 @@ function updateUserMemory(payload) {
     mood: mood
   };
 
-  const history = Array.isArray(current.moodHistory)
-    ? [...current.moodHistory, newMoodEntry]
+  const history = Array.isArray(currentSnapshot.moodHistory)
+    ? [...currentSnapshot.moodHistory, newMoodEntry]
     : [newMoodEntry];
 
   if (history.length > 100) {
@@ -297,18 +363,17 @@ function updateUserMemory(payload) {
   const detectedPatterns = analyzePatterns(history);
 
   const updated = {
-    ...current,
+    ...currentSnapshot,
     lastMessagePreview: preview,
     lastMessage: preview, 
     lastContext: finalContext,
     lastLanguage: language,
     lastSafetyFlag: finalSafety,
     lastMood: mood,
-    lastUpdatedAt: newMoodEntry.at,
-    interactionCount: current.interactionCount + 1,
-    lastTopic: muLastTopic ? muLastTopic : normalizeMessage(current.lastTopic),
+    interactionCount: currentSnapshot.interactionCount + 1,
+    lastTopic: muLastTopic ? muLastTopic : normalizeMessage(currentSnapshot.lastTopic),
     lastSignalCodes: nextSignalCodes,
-    hesitationSignal: muHesitation || !!current.hesitationSignal,
+    hesitationSignal: muHesitation || !!currentSnapshot.hesitationSignal,
     
     semanticGraph: updatedGraph,
     lnnState: updatedLNN,
@@ -317,15 +382,10 @@ function updateUserMemory(payload) {
     patterns: detectedPatterns 
   };
 
-  memoryStore[userId] = updated;
-  
-  // Trigger async save (fire and forget from the caller's perspective)
-  saveMemoryToDisk();
-
   return {
-    memory: updated,
+    updatedSnapshot: updated,
     delta: {
-      userId,
+      userId: currentSnapshot.userId,
       interactionCount: updated.interactionCount,
       lastMood: updated.lastMood,
       lastTopic: updated.lastTopic,
@@ -334,8 +394,29 @@ function updateUserMemory(payload) {
   };
 }
 
+// Backward compatibility for tests that might call this directly
+// Wraps the logic but operates on the global store (unsafe for concurrency but safe for single-thread tests)
+function updateUserMemory(payload) {
+    const userId = payload.userId || "anonymous";
+    const current = getUserMemoryInternal(userId);
+    const { updatedSnapshot, delta } = prepareMemoryUpdate(current, payload);
+    
+    // Simulate commit
+    memoryStore[userId] = {
+        ...updatedSnapshot,
+        _version: (current._version || 0) + 1,
+        lastUpdatedAt: new Date().toISOString()
+    };
+    saveMemoryToDisk();
+    
+    return { memory: memoryStore[userId], delta };
+}
+
 module.exports = {
-  getUserMemory,
-  getUserMemorySnapshot,
-  updateUserMemory
+  load,
+  commit,
+  prepareMemoryUpdate, // Exported for Controller
+  getUserMemory, // Legacy export
+  getUserMemorySnapshot, // Legacy export
+  updateUserMemory // Legacy export
 };

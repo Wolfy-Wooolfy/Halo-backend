@@ -1,152 +1,63 @@
 const crypto = require("crypto");
 
-function base64urlEncode(input) {
-  const buf = Buffer.isBuffer(input) ? input : Buffer.from(input, "utf-8");
-  return buf
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+// Fallback secret ONLY for dev/test if env is missing. 
+// In prod, HALO_IDENTITY_SECRET must be set.
+const SECRET = process.env.HALO_IDENTITY_SECRET || "dev-secret-do-not-use-in-prod-halo-core";
+
+function sign(data) {
+  return crypto.createHmac("sha256", SECRET).update(data).digest("hex");
 }
 
-function base64urlDecodeToString(input) {
-  const pad = input.length % 4 === 0 ? "" : "=".repeat(4 - (input.length % 4));
-  const b64 = input.replace(/-/g, "+").replace(/_/g, "/") + pad;
-  return Buffer.from(b64, "base64").toString("utf-8");
-}
-
-function hmacSha256(secret, data) {
-  return crypto.createHmac("sha256", secret).update(data).digest();
-}
-
-function getSecret() {
-  const secret = process.env.HALO_IDENTITY_SECRET;
-  if (!secret || typeof secret !== "string" || secret.trim().length < 16) {
-    return null;
-  }
-  return secret.trim();
-}
-
-function issueIdentityToken({ ttlSeconds = 60 * 60 * 24 * 30 } = {}) {
-  const secret = getSecret();
-  if (!secret) {
-    return null;
-  }
-
-  const identityId = crypto.randomUUID();
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    identity_id: identityId,
-    iat: now,
-    exp: now + ttlSeconds
+/**
+ * Resolves IdentityContext from Request Headers
+ * Implements Phase 3-A: Identity Boundary
+ */
+function resolveIdentity(req) {
+  const authHeader = req.headers["x-halo-identity"];
+  
+  // Default: Anonymous (Transient)
+  const anonymousContext = {
+    identityId: "anonymous_" + crypto.randomUUID().substring(0, 8),
+    type: "anonymous",
+    canPersist: false, // HARD RULE: Anonymous cannot write persistent memory
+    isValid: true
   };
 
-  const payloadStr = JSON.stringify(payload);
-  const payloadB64 = base64urlEncode(payloadStr);
-  const sig = hmacSha256(secret, payloadB64);
-  const sigB64 = base64urlEncode(sig);
-
-  return `${payloadB64}.${sigB64}`;
-}
-
-function verifyIdentityToken(token) {
-  const secret = getSecret();
-  if (!secret) {
-    return { ok: false, reason: "SECRET_MISSING" };
+  if (!authHeader || typeof authHeader !== "string") {
+    return anonymousContext;
   }
 
-  if (!token || typeof token !== "string") {
-    return { ok: false, reason: "TOKEN_MISSING" };
+  const [id, signature] = authHeader.split(".");
+  if (!id || !signature) {
+    return anonymousContext;
   }
 
-  const parts = token.split(".");
-  if (parts.length !== 2) {
-    return { ok: false, reason: "TOKEN_FORMAT" };
-  }
-
-  const [payloadB64, sigB64] = parts;
-
-  let payloadStr;
-  try {
-    payloadStr = base64urlDecodeToString(payloadB64);
-  } catch (e) {
-    return { ok: false, reason: "PAYLOAD_DECODE" };
-  }
-
-  let payload;
-  try {
-    payload = JSON.parse(payloadStr);
-  } catch (e) {
-    return { ok: false, reason: "PAYLOAD_JSON" };
-  }
-
-  if (!payload || typeof payload !== "object") {
-    return { ok: false, reason: "PAYLOAD_INVALID" };
-  }
-
-  const identityId = payload.identity_id;
-  const exp = payload.exp;
-
-  if (!identityId || typeof identityId !== "string") {
-    return { ok: false, reason: "IDENTITY_MISSING" };
-  }
-
-  if (!exp || typeof exp !== "number") {
-    return { ok: false, reason: "EXP_MISSING" };
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now >= exp) {
-    return { ok: false, reason: "TOKEN_EXPIRED" };
-  }
-
-  const expectedSig = hmacSha256(secret, payloadB64);
-  const expectedSigB64 = base64urlEncode(expectedSig);
-
-  const a = Buffer.from(expectedSigB64, "utf-8");
-  const b = Buffer.from(sigB64, "utf-8");
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    return { ok: false, reason: "SIG_MISMATCH" };
-  }
-
-  return {
-    ok: true,
-    identity: {
-      identity_id: identityId,
-      identity_type: "issued"
-    }
-  };
-}
-
-function resolveIdentityContext(req) {
-  const headerToken =
-    req && req.headers ? req.headers["x-halo-identity"] || req.headers["X-HALO-IDENTITY"] : null;
-
-  const token = Array.isArray(headerToken) ? headerToken[0] : headerToken;
-
-  const verified = verifyIdentityToken(token);
-  if (verified.ok) {
+  // Verify Signature
+  const expectedSignature = sign(id);
+  if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
     return {
-      identity_id: verified.identity.identity_id,
-      identity_type: "issued",
-      can_persist: true,
-      token: token
+      identityId: id,
+      type: "issued",
+      canPersist: true, // Issued identities allowed to persist
+      isValid: true
     };
   }
 
-  const issuedToken = issueIdentityToken();
-  return {
-    identity_id: "anonymous",
-    identity_type: "anonymous",
-    can_persist: false,
-    token: null,
-    issued_token: issuedToken || null,
-    issued_token_reason: issuedToken ? null : "SECRET_MISSING"
-  };
+  // If signature fails, degrade to anonymous immediately (Fail-Closed)
+  return anonymousContext;
+}
+
+/**
+ * Issues a new Identity Token
+ * Used when a user needs to upgrade from anonymous or fresh start
+ */
+function issueIdentity() {
+  const newId = "user_" + crypto.randomUUID();
+  const signature = sign(newId);
+  return `${newId}.${signature}`;
 }
 
 module.exports = {
-  resolveIdentityContext,
-  verifyIdentityToken,
-  issueIdentityToken
+  resolveIdentity,
+  issueIdentity
 };
