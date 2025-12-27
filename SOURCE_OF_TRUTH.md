@@ -68,6 +68,10 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/package-l
 
 ---
 
+#### package.json
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/package.json
+
+---
 #### server.js
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-backend/main/server.js
 
@@ -403,6 +407,21 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 
 ### HALO — Memory Interface Abstraction Spec (Phase 3-B, Baseline v0.3).md
 RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%94%20Memory%20Interface%20Abstraction%20Spec%20(Phase%203-B%2C%20Baseline%20v0.3).md
+
+---
+
+### HALO – Client Application Architecture Spec.md
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20%E2%80%93%20Client%20Application%20Architecture%20Spec.md
+
+---
+
+### Device Linking & Backup Trust Spec (v1).md
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/Device%20Linking%20%26%20Backup%20Trust%20Spec%20(v1).md
+
+---
+
+### HALO - Memory System — Growth + Semantic Engine.md
+RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20-%20Memory%20System%20%E2%80%94%20Growth%20%2B%20Semantic%20Engine.md
 
 ---
 
