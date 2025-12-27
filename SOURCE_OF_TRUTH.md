@@ -425,6 +425,11 @@ RAW: https://raw.githubusercontent.com/Wolfy-Wooolfy/Halo-Documents/main/HALO%20
 
 ---
 
+### HALO — Deterministic Boundary Contract (Phase 6.0).md
+RAW: 
+
+---
+
 ## 5.3 Mandatory Pre-Read (Hard Gate)
 
 Before the assistant does **ANY** of the following:
