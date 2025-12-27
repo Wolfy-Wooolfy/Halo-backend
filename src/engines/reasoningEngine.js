@@ -1,5 +1,5 @@
 const { buildHaloPrompt } = require("./promptBuilder");
-const { callLLM, isConfigured } = require("./llmClient");
+const { callLLM, checkReadiness } = require("./llmClient");
 const { resolveLanguageCode } = require("../engines/languageDetector");
 const { normalizeMessage } = require("../engines/messageNormalizer");
 const { buildPreview } = require("../utils/helpers");
@@ -86,7 +86,6 @@ function sanitizeEgyptianArabic(text) {
 
 function sanitizeHaloResponse(obj, language) {
   if (!obj || typeof obj !== "object") return obj;
-  // Use Central Engine
   const languageFamily = resolveLanguageCode(language);
   
   if (languageFamily !== "ar") {
@@ -261,23 +260,34 @@ async function generateResponse(options) {
   const route = safeOptions.route || {};
   const policy = safeOptions.policy || null;
 
-  const llmAllowedByRoute = typeof route.useLLM === "boolean" ? route.useLLM : true;
-  const llmAvailable = isConfigured();
+  const readiness = checkReadiness();
 
+  const llmAllowedByRoute = typeof route.useLLM === "boolean" ? route.useLLM : true;
+  
   const emergencyCategories = ["self_harm", "harm_others", "medical_emergency"];
   const safetyCategory = safety && typeof safety.category === "string" ? safety.category : "none";
   const isEmergency = emergencyCategories.includes(safetyCategory);
 
-  if (!message || !llmAvailable || !llmAllowedByRoute) {
+  // DECISION: Fallback if Not Ready OR Route says no LLM OR Empty Message
+  if (!message || !llmAllowedByRoute || !readiness.ready) {
+    let finalReasonCode = null;
+    
+    // Capture readiness failure code if that's the cause
+    if (!readiness.ready && llmAllowedByRoute) {
+      finalReasonCode = readiness.reasonCode;
+    }
+
     const base = isEmergency ? buildEmergencyResponse({ language, safety }) : buildFallbackResponse({ language, context });
     const cleaned = sanitizeHaloResponse(base, language);
+    
     return {
       reflection: cleaned.reflection,
       question: cleaned.question,
       micro_step: cleaned.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
       memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-      engine: { source: "fallback", model: "rule-based" }
+      engine: { source: "fallback", model: "rule-based" },
+      final_reason_code: finalReasonCode // Explicit return
     };
   }
 
@@ -290,11 +300,12 @@ async function generateResponse(options) {
           ? route.max_tokens
           : 256;
     const temperature = typeof route.temperature === "number" ? route.temperature : 0.4;
-    const model = route.model || process.env.LLM_MODEL || "gpt-4o";
+    
+    // STRICT: No default fallback allowed. Must come from env or route.
+    const model = route.model || process.env.LLM_MODEL || ""; 
 
-    const llmResult = await callLLM({ prompt, model, temperature, maxTokens, responseFormat: { type: "json_object" } });
-
-    if (!llmResult || !llmResult.success) {
+    // FAIL-CLOSED GUARD: If model is empty (and somehow passed readiness), block immediately
+    if (!model) {
       const base = buildFallbackResponse({ language, context });
       const cleaned = sanitizeHaloResponse(base, language);
       return {
@@ -303,7 +314,25 @@ async function generateResponse(options) {
         micro_step: cleaned.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
         memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-        engine: llmResult && llmResult.engine ? llmResult.engine : { source: "fallback", model: "rule-based" }
+        engine: { source: "fallback", model: "none" },
+        final_reason_code: "missing_env:LLM_MODEL"
+      };
+    }
+
+    const llmResult = await callLLM({ prompt, model, temperature, maxTokens, responseFormat: { type: "json_object" } });
+
+    if (!llmResult || !llmResult.success) {
+      const errCode = (llmResult && llmResult.error) ? llmResult.error : "LLM_UNKNOWN_ERROR";
+      const base = buildFallbackResponse({ language, context });
+      const cleaned = sanitizeHaloResponse(base, language);
+      return {
+        reflection: cleaned.reflection,
+        question: cleaned.question,
+        micro_step: cleaned.micro_step,
+        safety_flag: safety && safety.flag ? safety.flag : "none",
+        memory_update: buildMemoryUpdate({ message, context, safety, memory }),
+        engine: llmResult && llmResult.engine ? llmResult.engine : { source: "fallback", model: "rule-based" },
+        final_reason_code: errCode // Explicit return
       };
     }
 
@@ -336,7 +365,8 @@ async function generateResponse(options) {
         micro_step: cleaned.micro_step,
         safety_flag: safety && safety.flag ? safety.flag : "none",
         memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-        engine: llmResult.engine || { source: "fallback", model: "rule-based" }
+        engine: llmResult.engine || { source: "fallback", model: "rule-based" },
+        final_reason_code: "LLM_PARSE_FAILURE" // Explicit return
       };
     }
 
@@ -362,7 +392,8 @@ async function generateResponse(options) {
       micro_step: cleaned.micro_step,
       safety_flag: safety && safety.flag ? safety.flag : "none",
       memory_update: buildMemoryUpdate({ message, context, safety, memory }),
-      engine: { source: "fallback", model: "rule-based" }
+      engine: { source: "fallback", model: "rule-based" },
+      final_reason_code: "REASONING_EXCEPTION" // Explicit return
     };
   }
 }

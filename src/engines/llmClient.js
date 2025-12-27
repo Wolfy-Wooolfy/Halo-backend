@@ -7,7 +7,8 @@ function getApiKey() {
 }
 
 function getDefaultModel() {
-  return process.env.LLM_MODEL || "gpt-4o";
+  // STRICT: No default fallback allowed. Must come from env.
+  return process.env.LLM_MODEL || "";
 }
 
 function getTimeoutMs() {
@@ -24,10 +25,29 @@ function getMaxConcurrency() {
   return Math.floor(n);
 }
 
-function isConfigured() {
+function checkReadiness() {
   const url = getApiUrl();
   const key = getApiKey();
-  return url !== "" && key !== "";
+  const model = getDefaultModel();
+
+  if (!url) {
+    return { ready: false, reasonCode: "missing_env:LLM_API_URL", missingVar: "LLM_API_URL" };
+  }
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return { ready: false, reasonCode: "invalid_env:LLM_API_URL", missingVar: "LLM_API_URL" };
+  }
+  if (!key) {
+    return { ready: false, reasonCode: "missing_env:LLM_API_KEY", missingVar: "LLM_API_KEY" };
+  }
+  if (!model) {
+    return { ready: false, reasonCode: "missing_env:LLM_MODEL", missingVar: "LLM_MODEL" };
+  }
+  
+  return { ready: true, reasonCode: "ready", missingVar: null };
+}
+
+function isConfigured() {
+  return checkReadiness().ready;
 }
 
 let inFlight = 0;
@@ -44,17 +64,16 @@ function releaseSlot() {
 }
 
 async function callLLM(payload) {
-  const apiUrl = getApiUrl();
-  const apiKey = getApiKey();
+  const readiness = checkReadiness();
   const defaultModel = getDefaultModel();
 
-  if (!isConfigured()) {
+  if (!readiness.ready) {
     return {
       success: false,
       error: "LLM_NOT_CONFIGURED",
-      raw: null,
+      raw: { reason: readiness.reasonCode },
       output: null,
-      engine: { source: "llm", model: defaultModel }
+      engine: { source: "fallback", model: defaultModel || "none" }
     };
   }
 
@@ -73,7 +92,7 @@ async function callLLM(payload) {
       error: "LLM_OVERLOADED",
       raw: { in_flight: inFlight, max_concurrency: getMaxConcurrency() },
       output: null,
-      engine: { source: "llm", model }
+      engine: { source: "fallback", model }
     };
   }
 
@@ -91,7 +110,7 @@ async function callLLM(payload) {
 
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${apiKey}`
+    Authorization: `Bearer ${getApiKey()}`
   };
 
   const timeoutMs = getTimeoutMs();
@@ -99,7 +118,7 @@ async function callLLM(payload) {
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetch(getApiUrl(), {
       method: "POST",
       headers,
       body: JSON.stringify(body),
@@ -115,7 +134,7 @@ async function callLLM(payload) {
         status: response.status,
         raw: data,
         output: null,
-        engine: { source: "llm", model }
+        engine: { source: "fallback", model }
       };
     }
 
@@ -154,7 +173,7 @@ async function callLLM(payload) {
       error: isAbort ? "LLM_TIMEOUT" : "LLM_EXCEPTION",
       raw: isAbort ? { timeout_ms: timeoutMs } : String(err),
       output: null,
-      engine: { source: "llm", model }
+      engine: { source: "fallback", model }
     };
   } finally {
     clearTimeout(timeoutId);
@@ -162,4 +181,4 @@ async function callLLM(payload) {
   }
 }
 
-module.exports = { callLLM, isConfigured };
+module.exports = { callLLM, isConfigured, checkReadiness };
